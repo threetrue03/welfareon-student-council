@@ -1,0 +1,43 @@
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+app/.venv/
+
+# Django runtime data
+*.sqlite3
+app/db.sqlite3
+app/staticfiles/
+app/media/
+
+# Local organization and launcher configuration
+launcher_config.json
+app/config/welfare_site.json
+
+# Authentication and Google Sheets credentials
+app/auth/admin.csv
+app/auth/google_sheets.json
+app/auth/google_service_account.json
+app/credentials/
+**/service-account*.json
+
+# Local operational data and backups
+app/backups/
+*.xlsx
+logs/
+*.log
+*.pid
+
+# Build output
+build/
+dist/
+*.spec
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini

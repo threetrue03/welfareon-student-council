@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품 반납 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main rentals-main no-page-title">
+    <section class="rental-flow-grid rental-cart-grid rental-split-grid return-flow-grid{% if not selected_student %} is-searching-student{% else %} is-selecting-item{% endif %}">
+      <article class="panel rental-panel student-panel">
+        <div class="panel-header compact"><h2>학생 검색</h2></div>
+
+        <form class="rental-search-form student-autocomplete-form" method="get" data-student-search-form data-search-url="{% url 'rentals:student_search_api' %}">
+          {% if item_query %}<input type="hidden" name="item_q" value="{{ item_query }}">{% endif %}
+          {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+          <input type="search" name="student_q" value="{{ student_query }}" placeholder="학번 또는 이름 입력" autocomplete="off" data-student-search-input>
+        </form>
+
+        <div class="student-result-list" aria-label="학생 검색 결과" data-student-results{% if not student_query and not selected_student %} hidden{% endif %}>
+          {% for student in student_results %}
+            <a class="student-card{% if selected_student and selected_student.id == student.id %} selected{% endif %}" href="?student={{ student.id }}{% if student_query %}&student_q={{ student_query|urlencode }}{% endif %}{% if item_query %}&item_q={{ item_query|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category|urlencode }}{% endif %}">
+              <span class="student-id">{{ student.student_id }}</span>
+              <strong class="student-name">{{ student.name }}</strong>
+            </a>
+          {% empty %}
+            {% if student_query %}<p class="empty-state">검색 결과 없음</p>{% endif %}
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="panel rental-panel item-panel{% if not can_choose_items %} disabled-panel{% endif %}">
+        <div class="panel-header compact"><h2>처리할 물품 선택</h2></div>
+
+        <form class="item-filter-form" method="get" data-auto-search-form data-rental-item-form data-results-target="[data-return-item-area]">
+          {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.id }}">{% endif %}
+          {% if student_query %}<input type="hidden" name="student_q" value="{{ student_query }}">{% endif %}
+          <select name="category" {% if not can_choose_items %}disabled{% endif %}>
+            <option value="">전체 카테고리</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}"{% if selected_category == category.id|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          <input type="search" name="item_q" value="{{ item_query }}" placeholder="물품명 검색" autocomplete="off" {% if not can_choose_items %}disabled{% endif %}>
+          <button type="submit" {% if not can_choose_items %}disabled{% endif %}>검색</button>
+        </form>
+
+        <div class="item-selection-split" data-return-item-area>
+          <div class="item-choice-column">
+            <div class="equipment-list item-choice-list cart-item-list return-item-list">
+              {% if not selected_student %}
+                <p class="empty-state">학생을 선택하면 반납할 물품을 확인할 수 있습니다.</p>
+              {% else %}
+                {% for group in return_groups %}
+                  <article class="equipment-card item-choice-card item-source-card return-source-card" data-item-source tabindex="0" role="button" aria-label="{{ group.item.name }} 선택">
+                    <div class="cart-source-main">
+                      <strong>{{ group.item.name }}</strong>
+                      <span>{% if group.category %}{{ group.category.name }}{% else %}-{% endif %} · 대여 중 {{ group.count }}개</span>
+                      <small>{{ group.unit_numbers }}</small>
+                    </div>
+                    <em>반납</em>
+
+                    <template data-item-action-template>
+                      <section class="selected-item-detail return-detail" data-return-source>
+                        <div class="selected-item-head">
+                          <div>
+                            <strong>{{ group.item.name }}</strong>
+                            <span>{% if group.category %}{{ group.category.name }}{% else %}-{% endif %} · 대여 중 {{ group.count }}개</span>
+                          </div>
+                          <em>반납</em>
+                        </div>
+
+                        <div class="selected-item-location">
+                          <span>물품 위치</span>
+                          <strong>{% if group.item.location %}{{ group.item.location }}{% else %}-{% endif %}</strong>
+                        </div>
+
+                        <label class="selected-item-field">
+                          <span>반납할 물품 번호</span>
+                          <select data-return-rental-select>
+                            {% for record in group.records %}
+                              <option value="{{ record.id }}" data-item-name="{{ group.item.name }}" data-unit-number="{{ record.unit.number }}" data-due-date="{{ record.due_date|date:'Y-m-d' }}" data-item-label="{{ group.item.name }} {{ record.unit.number }}번">{{ record.unit.number }}번 · 반납 예정 {{ record.due_date|date:'Y-m-d' }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+
+                        <label class="selected-item-field">
+                          <span>반납 상태</span>
+                          <select data-return-status-select>
+                            {% for value, label in return_status_choices %}
+                              <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                          </select>
+                        </label>
+
+                        <button type="button" class="selected-item-action" data-return-cart-add>반납 리스트에 담기</button>
+                      </section>
+                    </template>
+                  </article>
+                {% empty %}
+                  <p class="empty-state">현재 대여 중인 물품이 없습니다.</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+            {% if can_choose_items %}
+              {% include 'items/pagination.html' %}
+            {% endif %}
+          </div>
+
+          <aside class="selected-item-panel" data-selected-item-panel>
+            <p class="empty-state selected-item-empty">왼쪽에서 반납할 물품을 선택해주세요.</p>
+          </aside>
+        </div>
+      </article>
+
+      <article class="panel rental-panel confirm-panel rental-cart-panel return-cart-panel{% if not can_choose_items %} disabled-panel{% endif %}">
+        <div class="panel-header compact"><h2>반납 리스트</h2></div>
+
+        <form method="post" class="rental-cart-form return-cart-form" data-return-cart-form>
+          {% csrf_token %}
+          <input type="hidden" name="action_type" value="return_equipment_cart">
+          {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.id }}">{% endif %}
+
+          <section class="cart-student-box">
+            <h3>학생 정보</h3>
+            {% if selected_student %}
+              <strong>{{ selected_student.student_id }} {{ selected_student.name }}</strong>
+              <span>현재 대여 중인 물품을 반납 처리합니다.</span>
+            {% else %}
+              <strong class="muted">학생 미선택</strong>
+              <span>학생을 먼저 검색하세요.</span>
+            {% endif %}
+          </section>
+
+          <section class="cart-list-box">
+            <div class="cart-list-head">
+              <span>담긴 반납 물품</span>
+              <strong data-return-cart-count>0개</strong>
+            </div>
+            <div class="cart-list" data-return-cart-list>
+              <p class="empty-state cart-empty">아직 담긴 물품이 없습니다.</p>
+            </div>
+            <div data-return-hidden-fields></div>
+          </section>
+
+          <button type="submit" class="borrow-submit" data-return-cart-submit data-loading-text="반납 처리 중..." disabled>반납 처리</button>
+        </form>
+      </article>
+    </section>
+  </main>
+</div>
+
+<script src="{% static 'js/rentals.js' %}?v=1.0.17"></script>
+{% endblock %}

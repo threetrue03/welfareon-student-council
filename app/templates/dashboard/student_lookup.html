@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}학생으로 조회 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main lookup-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>학생으로 조회</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel lookup-panel">
+      <form class="filter-form lookup-student-toolbar" method="get" data-auto-search-form data-results-target="[data-lookup-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="학생 이름 또는 학번 검색" autocomplete="off">
+        <button type="submit">검색</button>
+      </form>
+      <div data-lookup-results>
+        {% if students %}
+        <div class="item-table-wrap"><table class="item-table lookup-table"><thead><tr><th>학번</th><th>이름</th><th>전화번호</th><th>보기</th></tr></thead><tbody>
+          {% for student in students %}
+          <tr>
+            <td><strong>{{ student.student_id }}</strong></td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.phone|default:'-' }}</td>
+            <td><div class="row-actions table-actions"><a href="?student={{ student.id }}{% if query %}&q={{ query|urlencode }}{% endif %}" title="조회" aria-label="조회">🔍</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">조건에 맞는 학생이 없습니다.</p>{% endif %}
+      </div>
+    </section>
+  </main>
+</div>
+{% if selected_student %}
+<div class="item-modal is-open lookup-detail-modal" id="studentLookupDetail" role="dialog" aria-modal="true" aria-labelledby="studentLookupTitle">
+  <div class="modal-backdrop" onclick="location.href='{% url 'dashboard:student_lookup' %}{% if query %}?q={{ query|urlencode }}{% endif %}'"></div>
+  <section class="modal-card item-form-card modal-form lookup-detail-card">
+    <div class="modal-head"><h2 id="studentLookupTitle">학생 상세 조회</h2><a class="modal-close" href="{% url 'dashboard:student_lookup' %}{% if query %}?q={{ query|urlencode }}{% endif %}" aria-label="닫기">×</a></div>
+    <div class="lookup-summary-row">
+      <div><span>학번</span><strong>{{ selected_student.student_id }}</strong></div>
+      <div><span>이름</span><strong>{{ selected_student.name }}</strong></div>
+      <button type="button" class="copy-phone-button" data-copy-phone="{{ selected_student.phone }}"><span>전화번호</span><strong>{{ selected_student.phone|default:'-' }}</strong></button>
+    </div>
+    <p class="phone-copy-help">전화번호를 누르면 복사됩니다.</p>
+    <form class="record-date-form lookup-date-form" method="get">
+      <input type="hidden" name="student" value="{{ selected_student.id }}">
+      {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+      <label><span>시작일</span><input type="date" name="start_date" value="{{ start_date }}"></label>
+      <label><span>종료일</span><input type="date" name="end_date" value="{{ end_date }}"></label>
+      <button type="submit">조회</button>
+    </form>
+    <div class="record-table-wrap lookup-record-table"><table class="record-table"><thead><tr><th>대여 일시</th><th>대여 근무자</th><th>물품</th><th>반납 예정일</th><th>반납일</th><th>반납 여부</th><th>연체</th><th>반납 근무자</th><th>메모</th></tr></thead><tbody>
+      {% for row in record_rows %}
+      <tr><td>{{ row.borrowed_at }}</td><td>{{ row.borrow_worker }}</td><td>{{ row.item }}</td><td>{{ row.due_date }}</td><td>{{ row.returned_at }}</td><td>{{ row.return_status }}</td><td>{{ row.overdue }}</td><td>{{ row.return_worker }}</td><td>{{ row.memo }}</td></tr>
+      {% empty %}<tr><td colspan="9" class="empty-table-cell">조건에 맞는 대여 기록이 없습니다.</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if record_page_obj %}{% with page_obj=record_page_obj pagination_query_string=record_pagination_query_string pagination_page_param='record_page' %}{% include 'items/pagination.html' %}{% endwith %}{% endif %}
+  </section>
+</div>
+{% endif %}
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+<script src="{% static 'js/lookup.js' %}?v=1.0.17"></script>
+{% endblock %}

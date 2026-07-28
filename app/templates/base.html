@@ -1,0 +1,100 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>{% block title %}{{ organization_name }}{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        if (window.localStorage && window.localStorage.getItem('welfareSidebarCollapsed') === '1') {
+          document.documentElement.classList.add('sidebar-collapsed-preload');
+        }
+        var savedTheme = window.localStorage && window.localStorage.getItem('welfareThemeMode');
+        var theme = savedTheme === 'dark' ? 'dark' : 'light';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('theme-dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('theme-dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      } catch (error) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=1.0.17">
+  {% block extra_css %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=1.0.17">
+</head>
+<body>
+  <div class="page-shell">
+    {% if messages %}
+      <div class="message-stack" data-message-stack>
+        {% for message in messages %}
+          <div class="message message-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  {% if request.user.is_authenticated %}
+  <div class="password-modal-overlay" data-password-modal hidden aria-hidden="true">
+    <form method="post" action="{% url 'accounts:change_password' %}" class="password-modal-card password-change-modal" data-password-change-form role="dialog" aria-modal="true" aria-labelledby="passwordChangeTitle">
+      {% csrf_token %}
+      <div class="modal-head">
+        <h2 id="passwordChangeTitle">비밀번호 변경</h2>
+        <button type="button" data-password-modal-close aria-label="닫기">×</button>
+      </div>
+      <label>
+        <span>기존 비밀번호</span>
+        <input type="password" name="current_password" required autocomplete="current-password">
+      </label>
+      <label>
+        <span>새 비밀번호</span>
+        <input type="password" name="new_password1" required autocomplete="new-password">
+      </label>
+      <label>
+        <span>새 비밀번호 확인</span>
+        <input type="password" name="new_password2" required autocomplete="new-password">
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="secondary-button" data-password-modal-close>취소</button>
+        <button type="submit" class="primary-button">변경</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+  <script src="{% static 'js/base.js' %}?v=1.0.17"></script>
+  <script>
+    window.__welfareToastFallback = true;
+    (function () {
+      function removeMessages() {
+        var stack = document.querySelector('[data-message-stack]');
+        if (!stack) return;
+        var messages = stack.querySelectorAll('.message');
+        messages.forEach(function (message, index) {
+          var delay = 1000 + index * 80;
+          window.setTimeout(function () {
+            message.classList.add('is-hiding');
+          }, delay);
+          window.setTimeout(function () {
+            if (message.parentNode) message.parentNode.removeChild(message);
+            if (stack && stack.children.length === 0 && stack.parentNode) {
+              stack.parentNode.removeChild(stack);
+            }
+          }, delay + 240);
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeMessages);
+      } else {
+        removeMessages();
+      }
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

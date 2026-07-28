@@ -1,0 +1,114 @@
+<aside class="sidebar" aria-label="주요 메뉴" data-sidebar>
+  <div class="sidebar-brand">
+    <strong>{{ organization_name }}</strong>
+    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="사이드바 열고 닫기" title="사이드바 열고 닫기">
+      <span aria-hidden="true">‹</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item{% if active_tab == 'dashboard' %} active{% endif %}" href="{% url 'dashboard:home' %}" title="대시보드">
+      <span class="nav-icon" aria-hidden="true">📊</span>
+      <span class="nav-label">대시보드</span>
+    </a>
+    <a class="nav-item{% if active_tab == 'borrow' %} active{% endif %}" href="{% url 'rentals:borrow' %}" title="물품 대여/지급">
+      <span class="nav-icon" aria-hidden="true">🤝</span>
+      <span class="nav-label">물품 대여/지급</span>
+    </a>
+    <a class="nav-item{% if active_tab == 'return' %} active{% endif %}" href="{% url 'rentals:return' %}" title="물품 반납">
+      <span class="nav-icon" aria-hidden="true">↩️</span>
+      <span class="nav-label">물품 반납</span>
+    </a>
+
+    <div class="nav-group{% if active_tab == 'lookup' %} active{% endif %}">
+      <button class="nav-item nav-parent" type="button" title="조회" aria-haspopup="true">
+        <span class="nav-icon" aria-hidden="true">🔎</span>
+        <span class="nav-label">조회</span>
+      </button>
+      <div class="nav-submenu" aria-label="조회 세부 메뉴">
+        <a class="nav-subitem{% if lookup_sub_tab == 'students' %} active{% endif %}" href="{% url 'dashboard:student_lookup' %}" title="학생으로 조회">
+          <span class="nav-subicon" aria-hidden="true">👥</span>
+          <span>학생으로 조회</span>
+        </a>
+        <a class="nav-subitem{% if lookup_sub_tab == 'items' %} active{% endif %}" href="{% url 'dashboard:item_lookup' %}" title="물품으로 조회">
+          <span class="nav-subicon" aria-hidden="true">📦</span>
+          <span>물품으로 조회</span>
+        </a>
+      </div>
+    </div>
+
+    {% if is_welfare_admin %}
+    <div class="nav-group{% if active_tab == 'db' %} active{% endif %}">
+      <button class="nav-item nav-parent" type="button" title="DB 관리" aria-haspopup="true">
+        <span class="nav-icon" aria-hidden="true">🗄️</span>
+        <span class="nav-label">DB 관리</span>
+      </button>
+      <div class="nav-submenu" aria-label="DB 관리 세부 메뉴">
+        <a class="nav-subitem{% if db_sub_tab == 'categories' %} active{% endif %}" href="{% url 'items:category_list' %}" title="카테고리 관리"><span class="nav-subicon" aria-hidden="true">🏷️</span><span>카테고리 관리</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'items' %} active{% endif %}" href="{% url 'items:item_list' %}" title="물품 관리"><span class="nav-subicon" aria-hidden="true">📦</span><span>물품 관리</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'inventory_import' %} active{% endif %}" href="{% url 'items:db_import' %}" title="물품 DB 가져오기"><span class="nav-subicon" aria-hidden="true">📥</span><span>물품 DB 가져오기</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'students' %} active{% endif %}" href="{% url 'items:student_list' %}" title="학생 관리"><span class="nav-subicon" aria-hidden="true">👥</span><span>학생 관리</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'student_import' %} active{% endif %}" href="{% url 'items:student_db_import' %}" title="학생 DB 가져오기"><span class="nav-subicon" aria-hidden="true">📥</span><span>학생 DB 가져오기</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'workers' %} active{% endif %}" href="{% url 'items:worker_list' %}" title="근무자 관리"><span class="nav-subicon" aria-hidden="true">🧑‍💼</span><span>근무자 관리</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'worker_import' %} active{% endif %}" href="{% url 'items:worker_db_import' %}" title="근무자 DB 가져오기"><span class="nav-subicon" aria-hidden="true">📥</span><span>근무자 DB 가져오기</span></a>
+        <a class="nav-subitem{% if db_sub_tab == 'data_backup' %} active{% endif %}" href="{% url 'items:data_backup' %}" title="DB 전체 백업"><span class="nav-subicon" aria-hidden="true">💾</span><span>DB 전체 백업</span></a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="nav-group{% if active_tab == 'records' %} active{% endif %}">
+      <button class="nav-item nav-parent" type="button" title="물품 기록" aria-haspopup="true">
+        <span class="nav-icon" aria-hidden="true">📚</span>
+        <span class="nav-label">물품 기록</span>
+      </button>
+      <div class="nav-submenu" aria-label="물품 기록 세부 메뉴">
+        <a class="nav-subitem{% if record_sub_tab == 'rentals' %} active{% endif %}" href="{% url 'rentals:rental_records' %}" title="대여 기록"><span class="nav-subicon" aria-hidden="true">📝</span><span>대여 기록</span></a>
+        <a class="nav-subitem{% if record_sub_tab == 'returns' %} active{% endif %}" href="{% url 'rentals:return_records' %}" title="반납 기록"><span class="nav-subicon" aria-hidden="true">✅</span><span>반납 기록</span></a>
+      </div>
+    </div>
+
+    {% if is_welfare_admin %}
+    <div class="nav-group{% if active_tab == 'admin' %} active{% endif %}">
+      <button class="nav-item nav-parent" type="button" title="관리자" aria-haspopup="true">
+        <span class="nav-icon" aria-hidden="true">⚙️</span>
+        <span class="nav-label">관리자</span>
+      </button>
+      <div class="nav-submenu" aria-label="관리자 세부 메뉴">
+        <a class="nav-subitem{% if settings_sub_tab == 'rental' %} active{% endif %}" href="{% url 'dashboard:rental_settings' %}" title="대여 설정">
+          <span class="nav-subicon" aria-hidden="true">📅</span>
+          <span>대여 설정</span>
+        </a>
+        <a class="nav-subitem{% if settings_sub_tab == 'blacklist' %} active{% endif %}" href="{% url 'dashboard:blacklist_settings' %}" title="블랙리스트 설정">
+          <span class="nav-subicon" aria-hidden="true">🚫</span>
+          <span>블랙리스트 설정</span>
+        </a>
+        <a class="nav-subitem{% if settings_sub_tab == 'shifts' %} active{% endif %}" href="{% url 'dashboard:shift_records' %}" title="근무 기록">
+          <span class="nav-subicon" aria-hidden="true">🕒</span>
+          <span>근무 기록</span>
+        </a>
+        <a class="nav-subitem{% if settings_sub_tab == 'google_sheets' %} active{% endif %}" href="{% url 'dashboard:google_sheets' %}" title="구글 시트 연동">
+          <span class="nav-subicon" aria-hidden="true">📄</span>
+          <span>구글 시트 연동</span>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-bottom-actions">
+    <button class="sidebar-user-button" type="button" data-user-menu-toggle title="사용자 설정"><span aria-hidden="true">👤</span></button>
+    <form class="sidebar-logout" action="{% url 'accounts:end_shift' %}" method="post" data-end-shift-form>
+      {% csrf_token %}
+      <button type="submit" title="근무 종료" data-end-shift-button><span class="logout-label">근무 종료</span></button>
+    </form>
+    <div class="user-popover" data-user-menu hidden>
+      <strong>{{ request.user.name }}</strong>
+      <span>{{ request.user.student_id }}</span>
+      <label class="theme-toggle-row" for="themeModeToggle">
+        <span>어두움 모드</span>
+        <input id="themeModeToggle" type="checkbox" role="switch" data-theme-toggle aria-label="어두움 모드 전환">
+      </label>
+      <button type="button" class="user-menu-action" data-password-modal-open>비밀번호 변경</button>
+    </div>
+  </div>
+</aside>

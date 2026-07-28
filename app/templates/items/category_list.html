@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}카테고리 관리 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>카테고리 관리</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel">
+      <form class="filter-form category-filter-toolbar" method="get" data-auto-search-form data-results-target="[data-management-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="카테고리 검색" autocomplete="off">
+        <button type="submit">검색</button>
+        <button class="square-add-button" type="button" data-modal-open="categoryCreateModal" aria-label="카테고리 추가" title="카테고리 추가">+</button>
+      </form>
+      <div data-management-results>
+        {% if categories %}
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>카테고리 이름</th><th>물품 수</th><th>관리</th></tr></thead><tbody>
+          {% for category in categories %}
+          <tr><td><strong>{{ category.name }}</strong></td><td>{{ category.item_count }}개</td><td><div class="row-actions table-actions"><button type="button" data-modal-open="categoryUpdateModal{{ category.id }}">수정</button><form action="{% url 'items:category_delete' category.pk %}" method="post" class="inline-delete-form" data-confirm="카테고리를 삭제하시겠습니까? 연결된 물품이 있으면 삭제되지 않습니다.">{% csrf_token %}<button type="submit">삭제</button></form></div></td></tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">아직 등록된 카테고리가 없습니다.</p>{% endif %}
+        {% for category in categories %}
+        <div class="item-modal" id="categoryUpdateModal{{ category.id }}" role="dialog" aria-modal="true" aria-labelledby="categoryUpdateTitle{{ category.id }}" hidden>
+          <div class="modal-backdrop" data-modal-close></div>
+          <form method="post" action="{% url 'items:category_update' category.pk %}" class="modal-card item-form-card modal-form compact-modal-form">
+            {% csrf_token %}<div class="modal-head"><h2 id="categoryUpdateTitle{{ category.id }}">카테고리 수정</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+            <div class="form-grid single"><label><span>카테고리 이름</span><input type="text" name="name" value="{{ category.name }}" required></label></div>
+            <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+<div class="item-modal{% if active_modal == 'category' %} is-open{% endif %}" id="categoryCreateModal" role="dialog" aria-modal="true" aria-labelledby="categoryCreateTitle"{% if active_modal != 'category' %} hidden{% endif %}>
+  <div class="modal-backdrop" data-modal-close></div>
+  <form method="post" action="{% url 'items:category_create' %}" class="modal-card item-form-card modal-form compact-modal-form">
+    {% csrf_token %}<div class="modal-head"><h2 id="categoryCreateTitle">카테고리 추가</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+    {% if category_form.non_field_errors %}<div class="form-errors">{{ category_form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid single"><label><span>카테고리 이름</span>{{ category_form.name }}{{ category_form.name.errors }}</label></div>
+    <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+  </form>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

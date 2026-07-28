@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}대여 설정 | {{ organization_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header">
+      <div><h1>대여 설정</h1></div>
+    </header>
+    <section class="panel settings-panel">
+      <form method="post" class="settings-form">
+        {% csrf_token %}
+        <h2>대여 설정</h2>
+        <label>
+          <span>기본 대여 기간</span>
+          <input type="number" name="default_rental_days" min="1" value="{{ default_rental_days }}" required>
+          <em>일</em>
+        </label>
+        <p>오늘 대여 시 반납 예정일: <strong>{{ example_due_date|date:'Y-m-d' }}</strong></p>
+        <p>설정 변경 후 새로 대여되는 기록부터 변경된 대여 기간이 저장됩니다.</p>
+        <button type="submit" class="action-button" data-loading-text="저장 중...">저장</button>
+      </form>
+    </section>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}블랙리스트 설정 | {{ organization_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header">
+      <div><h1>블랙리스트 설정</h1></div>
+    </header>
+    <section class="panel settings-panel">
+      <form method="post" class="settings-form">
+        {% csrf_token %}
+        <h2>블랙리스트 설정</h2>
+        <label>
+          <span>연체 기준 횟수</span>
+          <input type="number" name="overdue_limit" min="1" value="{{ overdue_limit }}" required>
+          <em>회</em>
+        </label>
+        <label>
+          <span>블랙리스트 대여 금지 기간</span>
+          <input type="number" name="blacklist_months" min="1" value="{{ blacklist_months }}" required>
+          <em>개월</em>
+        </label>
+        <p>설정 변경 후 새로 대여되는 기록부터 변경된 블랙리스트 기준이 저장됩니다.</p>
+        <button type="submit" class="action-button" data-loading-text="저장 중...">저장</button>
+      </form>
+    </section>
+  </main>
+</div>
+{% endblock %}

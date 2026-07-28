@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}학생 DB 가져오기 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main items-main import-main">
+    <section class="import-layout">
+      <article class="panel import-panel">
+        <h1>학생 DB 가져오기</h1>
+        <div class="import-warning" role="alert">
+          <strong>학생 DB를 새 파일 기준으로 다시 등록합니다.</strong>
+          <ul>
+            <li>기존 학생 명단은 삭제됩니다.</li>
+            <li>학생에게 연결된 대여·반납 기록도 함께 삭제됩니다.</li>
+            <li>가져오기 전 자동 백업 ZIP이 생성됩니다.</li>
+          </ul>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="import-form" data-custom-confirm="학생 DB를 새 파일 기준으로 덮어씁니다. 기존 학생 명단과 대여·반납 기록이 삭제됩니다. 계속할까요?">
+          {% csrf_token %}
+          <label class="file-drop-field">
+            <span>xlsx 파일 선택</span>
+            <input type="file" name="xlsx_file" accept=".xlsx" required>
+          </label>
+          <button type="submit" class="action-button import-upload-button" aria-label="업로드" title="업로드">📤</button>
+        </form>
+
+        {% if errors %}
+          <section class="import-error-box">
+            <h2>업로드 오류</h2>
+            <ul>
+              {% for error in errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if preview_rows %}
+          <section class="import-preview-box">
+            <h2>읽은 데이터 미리보기</h2>
+            <table class="import-example-table">
+              <thead><tr><th>학번</th><th>이름</th><th>학생회비</th></tr></thead>
+              <tbody>
+                {% for row in preview_rows %}
+                  <tr><td>{{ row.student_id }}</td><td>{{ row.name }}</td><td>{{ row.fee_status_label }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </section>
+        {% endif %}
+      </article>
+
+      <aside class="panel import-guide-panel">
+        <h2>작성 형식</h2>
+        <p>첫 행은 제목 행으로 자동 제외됩니다.<br>학생회비 칸이 비어 있으면 납부자로 처리됩니다.</p>
+        <table class="import-example-table">
+          <thead><tr><th>학번</th><th>이름</th><th>학생회비 납부 여부</th></tr></thead>
+          <tbody>
+            <tr><td>20252731</td><td>조세진</td><td>납부</td></tr>
+            <tr><td>20250001</td><td>김민수</td><td>미납</td></tr>
+            <tr><td>20250002</td><td>이서연</td><td>환불</td></tr>
+          </tbody>
+        </table>
+        <ul class="import-rule-list">
+          <li>학번과 이름은 반드시 입력해야 합니다.</li>
+          <li>학생회비 납부 여부는 납부/미납/환불 또는 1/0 형식으로 입력할 수 있습니다.</li>
+          <li>학번이 파일 안에서 중복되면 오류로 처리됩니다.</li>
+          <li>오류가 있으면 학생 DB는 변경되지 않습니다.</li>
+          <li>정상 업로드 시 기존 학생 명단과 대여·반납 기록은 삭제됩니다.</li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

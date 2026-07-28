@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}홈 | 복지 프로그램{% endblock %}
+
+{% block content %}
+<main class="home-layout">
+  <section class="home-card">
+    <div>
+      <p class="eyebrow">{{ organization_name }}</p>
+      <h1>복지 프로그램</h1>
+      <p class="description">로그인에 성공했습니다. 이제 학생 검색, 복지 물품 관리, 대여/반납 기능을 확장하면 됩니다.</p>
+    </div>
+
+    <div class="user-summary">
+      <div>
+        <span>이름</span>
+        <strong>{{ request.user.name }}</strong>
+      </div>
+      <div>
+        <span>학번</span>
+        <strong>{{ request.user.student_id }}</strong>
+      </div>
+      <div>
+        <span>권한</span>
+        <strong>{{ request.user.get_role_display }}</strong>
+      </div>
+    </div>
+
+    <form action="{% url 'accounts:end_shift' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="secondary-button">근무 종료</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ page_title }} | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header">
+      <div>
+        <h1>{{ page_title }}</h1>
+      </div>
+      <div class="header-actions">
+        <a class="action-button secondary" href="{% url 'items:item_list' %}">목록으로</a>
+      </div>
+    </header>
+
+    <form method="post" class="panel item-form-card" id="itemForm" data-mode="{{ mode }}" data-old-total="{{ old_total|default:0 }}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-grid">
+        <label>
+          <span>물품 이름</span>
+          {{ form.name }}
+          {{ form.name.errors }}
+        </label>
+        <label>
+          <span>물품 위치</span>
+          {{ form.location }}
+          {{ form.location.errors }}
+        </label>
+        <label>
+          <span>카테고리</span>
+          {{ form.category }}
+          {{ form.category.errors }}
+        </label>
+      </div>
+
+      <section class="item-kind-section" aria-label="물품 특성 선택">
+        <div class="field-title-row">
+          <span class="field-title">물품 특성</span>
+          <small>카테고리와 별개로, 이 물품을 어떤 방식으로 관리할지 선택합니다.</small>
+        </div>
+        <div class="item-type-cards">
+          <label class="item-type-card">
+            <input type="radio" name="item_type" value="equipment"{% if form.item_type.value == 'equipment' or not form.item_type.value %} checked{% endif %}>
+            <span class="item-type-card-body">
+              <strong>비품</strong>
+              <em>보조배터리, 우산처럼 번호별 대여/반납 상태를 관리합니다.</em>
+            </span>
+          </label>
+          <label class="item-type-card">
+            <input type="radio" name="item_type" value="consumable"{% if form.item_type.value == 'consumable' %} checked{% endif %}>
+            <span class="item-type-card-body">
+              <strong>소모품</strong>
+              <em>A4용지처럼 현재 수량과 전체 수량을 관리합니다.</em>
+            </span>
+          </label>
+        </div>
+        {{ form.item_type.errors }}
+      </section>
+
+      <div class="form-grid quantity-section">
+        <label class="consumable-fields">
+          <span>현재 수량</span>
+          {{ form.current_quantity }}
+          {{ form.current_quantity.errors }}
+        </label>
+        <label>
+          <span>전체 수량</span>
+          {{ form.total_quantity }}
+          {{ form.total_quantity.errors }}
+        </label>
+        <p class="field-help equipment-fields">비품은 전체 수량만큼 1번부터 자동으로 번호가 생성됩니다.</p>
+      </div>
+
+      {% if mode == 'update' and item.is_equipment %}
+        <section class="unit-status-section">
+          <div class="section-heading-row">
+            <div>
+              <p class="section-label">번호별 상태</p>
+              <h2>{{ item.name }} 개별 번호</h2>
+            </div>
+            <p>전체 수량을 줄이면 줄어든 번호는 삭제됩니다.</p>
+          </div>
+
+          <div class="unit-grid">
+            {% for unit in units %}
+              <label class="unit-card">
+                <span>{{ unit.number }}번</span>
+                <select name="unit_status_{{ unit.id }}">
+                  {% for value, label in status_choices %}
+                    <option value="{{ value }}"{% if unit.status == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
+      <div class="form-actions">
+        <button type="submit" class="action-button">저장</button>
+        <a class="text-button" href="{% url 'items:item_list' %}">취소</a>
+      </div>
+    </form>
+  </main>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

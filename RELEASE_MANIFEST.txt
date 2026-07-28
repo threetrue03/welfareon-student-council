@@ -1,0 +1,21 @@
+WelfareON Distribution v1.0.17
+
+Package type: Full distribution source/build package
+Root folder: WelfareON_Distribution_v1.0.17
+File count: 159
+
+Included:
+- Full Django app source
+- Launcher source and build scripts
+- Assets
+- Document templates
+- Release notes and changelog
+
+Excluded:
+- app/db.sqlite3
+- app/auth/admin.csv
+- app/auth/google_sheets.json
+- app/auth/google_service_account.json
+- app/credentials/service-account.json
+- launcher_config.json
+- build/dist/log/cache files

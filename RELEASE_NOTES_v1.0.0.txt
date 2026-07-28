@@ -1,0 +1,14 @@
+복지온 v1.0.0 Release Notes
+
+배포 구성
+- 런처 기반 최초 설정
+- 내부 WebView 실행으로 URL 주소창 숨김
+- 구글 시트 오늘 데이터 동기화
+- 근무자/학생/물품/대여/반납/조회/관리자 기능 포함
+- 단체 표시 이름 초기 설정 지원
+- 저작권/문의 고지 포함
+
+주의
+- 이 패키지는 민감정보 제거 배포본입니다.
+- 실제 admin.csv, service-account.json, db.sqlite3는 최초 실행/운영 중 생성하거나 직접 설정해야 합니다.
+- Windows EXE는 Windows 환경에서 build_launcher.bat 실행 후 dist/복지온_Launcher.exe로 생성하세요.

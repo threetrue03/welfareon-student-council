@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품 대여/지급 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main rentals-main no-page-title">
+    <section class="rental-flow-grid rental-cart-grid rental-split-grid{% if not selected_student %} is-searching-student{% elif not selected_student.can_borrow %} is-student-blocked{% elif not phone_ready %} is-phone-step{% else %} is-selecting-item{% endif %}">
+      <article class="panel rental-panel student-panel">
+        <div class="panel-header compact"><h2>학생 검색</h2></div>
+
+        <form class="rental-search-form student-autocomplete-form" method="get" data-student-search-form data-search-url="{% url 'rentals:student_search_api' %}">
+          {% if item_query %}<input type="hidden" name="item_q" value="{{ item_query }}">{% endif %}
+          {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+          <input type="search" name="student_q" value="{{ student_query }}" placeholder="학번 또는 이름 입력" autocomplete="off" data-student-search-input>
+        </form>
+
+        <div class="student-result-list" aria-label="학생 검색 결과" data-student-results{% if not student_query and not selected_student %} hidden{% endif %}>
+          {% for student in student_results %}
+            <a class="student-card{% if selected_student and selected_student.id == student.id %} selected{% endif %}" href="?student={{ student.id }}{% if student_query %}&student_q={{ student_query|urlencode }}{% endif %}{% if item_query %}&item_q={{ item_query|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category|urlencode }}{% endif %}">
+              <span class="student-id">{{ student.student_id }}</span>
+              <strong class="student-name">{{ student.name }}</strong>
+            </a>
+          {% empty %}
+            {% if student_query %}<p class="empty-state">검색 결과 없음</p>{% endif %}
+          {% endfor %}
+        </div>
+
+        {% if selected_student and not selected_student.can_borrow %}
+          <p class="warning-text slim-warning">{{ selected_student.borrow_block_reason }}</p>
+        {% endif %}
+
+        <form class="student-phone-step{% if not selected_student or not selected_student.can_borrow %} disabled-phone-step{% endif %}" method="post" data-phone-step-form>
+          {% csrf_token %}
+          <input type="hidden" name="action_type" value="save_student_phone">
+          {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.id }}">{% endif %}
+
+          <label>
+            <span>전화번호</span>
+            <input type="tel" name="phone" value="{% if selected_student %}{{ selected_student.phone }}{% endif %}" placeholder="전화번호 입력" {% if not selected_student or not selected_student.can_borrow %}disabled{% endif %}>
+          </label>
+          <p>다음 버튼을 눌러야 전화번호가 저장됩니다.</p>
+          <button type="submit" data-loading-text="저장 중..." {% if not selected_student or not selected_student.can_borrow %}disabled{% endif %}>다음</button>
+        </form>
+      </article>
+
+      <article class="panel rental-panel item-panel{% if not can_choose_items %} disabled-panel{% endif %}">
+        <div class="panel-header compact"><h2>처리할 물품 선택</h2></div>
+
+        <form class="item-filter-form" method="get" data-auto-search-form data-rental-item-form data-results-target="[data-rental-item-area]">
+          {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.id }}">{% endif %}
+          {% if student_query %}<input type="hidden" name="student_q" value="{{ student_query }}">{% endif %}
+          {% if phone_ready %}<input type="hidden" name="phone_ready" value="1">{% endif %}
+          <select name="category" {% if not can_choose_items %}disabled{% endif %}>
+            <option value="">전체 카테고리</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}"{% if selected_category == category.id|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+          <input type="search" name="item_q" value="{{ item_query }}" placeholder="물품명 검색" autocomplete="off" {% if not can_choose_items %}disabled{% endif %}>
+          <button type="submit" {% if not can_choose_items %}disabled{% endif %}>검색</button>
+        </form>
+
+        <div class="item-selection-split" data-rental-item-area>
+          <div class="item-choice-column">
+            <div class="equipment-list item-choice-list cart-item-list">
+              {% if not selected_student %}
+                <p class="empty-state">학생을 선택하면 물품 선택이 활성화됩니다.</p>
+              {% elif not selected_student.can_borrow %}
+                <p class="empty-state">대여/지급 불가 학생은 물품을 선택할 수 없습니다.</p>
+              {% elif not phone_ready %}
+                <p class="empty-state">전화번호를 입력하고 다음 버튼을 누르면 물품 선택이 활성화됩니다.</p>
+              {% else %}
+                {% for item in items %}
+                  {% if item.is_equipment %}
+                    <article class="equipment-card item-choice-card item-source-card equipment" data-item-source tabindex="0" role="button" aria-label="{{ item.name }} 선택">
+                      <div class="cart-source-main">
+                        <strong>{{ item.name }}</strong>
+                        <span>{% if item.category %}{{ item.category.name }}{% else %}-{% endif %} · {{ item.get_item_type_display }}</span>
+                      </div>
+                      <em>가능 {{ item.cart_available_count }} / {{ item.total_quantity }}</em>
+
+                      <template data-item-action-template>
+                        <section class="selected-item-detail equipment-detail" data-cart-source>
+                          <div class="selected-item-head">
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span>{% if item.category %}{{ item.category.name }}{% else %}-{% endif %} · {{ item.get_item_type_display }}</span>
+                            </div>
+                            <em>가능 {{ item.cart_available_count }} / {{ item.total_quantity }}</em>
+                          </div>
+
+                          <div class="selected-item-location">
+                            <span>물품 위치</span>
+                            <strong>{% if item.location %}{{ item.location }}{% else %}-{% endif %}</strong>
+                          </div>
+
+                          <label class="selected-item-field">
+                            <span>물품 번호 선택</span>
+                            <select data-cart-unit-select {% if not item.cart_available_count %}disabled{% endif %}>
+                              {% for unit in item.cart_units_for_cart %}
+                                <option value="{{ unit.id }}" data-item-name="{{ item.name }}" data-unit-number="{{ unit.number }}" data-unit-status="{{ unit.status }}" data-item-label="{{ item.name }} {{ unit.number }}번"{% if unit.status != 'available' %} disabled{% endif %}>{{ unit.number }}번{% if unit.status != 'available' %} [{{ unit.get_status_display }}]{% endif %}</option>
+                              {% empty %}
+                                <option value="" disabled>등록된 번호 없음</option>
+                              {% endfor %}
+                            </select>
+                          </label>
+
+                          <button type="button" class="selected-item-action" data-cart-add {% if not item.cart_available_count %}disabled{% endif %}>대여 리스트에 담기</button>
+                        </section>
+                      </template>
+                    </article>
+                  {% else %}
+                    <article class="equipment-card item-choice-card item-source-card consumable" data-item-source tabindex="0" role="button" aria-label="{{ item.name }} 선택">
+                      <div>
+                        <strong>{{ item.name }}</strong>
+                        <span>{% if item.category %}{{ item.category.name }}{% else %}-{% endif %} · {{ item.get_item_type_display }}</span>
+                      </div>
+                      <em>현재 {{ item.current_quantity }} / {{ item.total_quantity }}</em>
+
+                      <template data-item-action-template>
+                        <section class="selected-item-detail consumable-detail" data-consumable-source>
+                          <div class="selected-item-head">
+                            <div>
+                              <strong>{{ item.name }}</strong>
+                              <span>{% if item.category %}{{ item.category.name }}{% else %}-{% endif %} · {{ item.get_item_type_display }}</span>
+                            </div>
+                            <em>현재 {{ item.current_quantity }} / {{ item.total_quantity }}</em>
+                          </div>
+
+                          <div class="selected-item-location">
+                            <span>물품 위치</span>
+                            <strong>{% if item.location %}{{ item.location }}{% else %}-{% endif %}</strong>
+                          </div>
+
+                          <label class="selected-item-field">
+                            <span>지급 수량</span>
+                            <input type="number" min="1" max="{{ item.current_quantity|default_if_none:'0' }}" value="1" data-consumable-quantity {% if not item.current_quantity %}disabled{% endif %}>
+                          </label>
+
+                          <button type="button" class="selected-item-action" data-consumable-cart-add data-item-id="{{ item.id }}" data-item-name="{{ item.name }}" data-current-quantity="{{ item.current_quantity|default_if_none:'0' }}" {% if not item.current_quantity %}disabled{% endif %}>대여 리스트에 담기</button>
+                        </section>
+                      </template>
+                    </article>
+                  {% endif %}
+                {% empty %}
+                  <p class="empty-state">조건에 맞는 물품이 없습니다.</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+            {% if can_choose_items %}
+              {% include 'items/pagination.html' %}
+            {% endif %}
+          </div>
+
+          <aside class="selected-item-panel" data-selected-item-panel>
+            <p class="empty-state selected-item-empty">왼쪽에서 물품을 선택해주세요.</p>
+          </aside>
+        </div>
+      </article>
+
+      <article class="panel rental-panel confirm-panel rental-cart-panel{% if not can_choose_items %} disabled-panel{% endif %}">
+        <div class="panel-header compact"><h2>대여 리스트</h2></div>
+
+        <form method="post" class="rental-cart-form" id="equipmentCartForm" data-rental-cart-form>
+          {% csrf_token %}
+          <input type="hidden" name="action_type" value="borrow_equipment_cart">
+          {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.id }}">{% endif %}
+          {% if phone_ready %}<input type="hidden" name="phone_ready" value="1">{% endif %}
+
+          <section class="cart-student-box">
+            <h3>학생 정보</h3>
+            {% if selected_student %}
+              <strong>{{ selected_student.student_id }} {{ selected_student.name }}</strong>
+              {% if selected_student.can_borrow %}
+                <span class="borrow-ok">대여 가능</span>
+              {% else %}
+                <span class="borrow-no">대여 불가</span>
+              {% endif %}
+            {% else %}
+              <strong class="muted">학생 미선택</strong>
+              <span>학생을 먼저 검색하세요.</span>
+            {% endif %}
+          </section>
+
+          <section class="cart-list-box">
+            <div class="cart-list-head">
+              <span>담긴 물품</span>
+              <strong data-cart-count>0개</strong>
+            </div>
+            <div class="cart-list" data-rental-cart-list>
+              <p class="empty-state cart-empty">아직 담긴 물품이 없습니다.</p>
+            </div>
+            <div data-cart-hidden-fields></div>
+          </section>
+
+          <section class="cart-policy-box">
+            <div>
+              <span>반납 예정일</span>
+              <strong>{{ default_due_date|date:'Y-m-d' }}</strong>
+            </div>
+            <p>기본 대여 기간 {{ default_due_days }}일 기준</p>
+          </section>
+
+          <label class="form-field cart-memo-field">
+            <span>메모</span>
+            {{ rental_form.memo }}
+            {{ rental_form.memo.errors }}
+          </label>
+
+          {% if rental_form.non_field_errors %}<div class="form-errors">{{ rental_form.non_field_errors }}</div>{% endif %}
+
+          <button type="submit" class="borrow-submit" data-rental-cart-submit data-loading-text="처리 중..." disabled>처리</button>
+        </form>
+      </article>
+    </section>
+  </main>
+</div>
+
+<script src="{% static 'js/rentals.js' %}?v=1.0.17"></script>
+{% endblock %}

@@ -1,0 +1,475 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  color: #111827;
+  font-size: 15px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 30%),
+    linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.message-stack {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 9999;
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100% - 32px));
+  pointer-events: none;
+}
+
+.message {
+  padding: 10px 13px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+  backdrop-filter: blur(12px);
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  animation: toast-slide-in 0.22s cubic-bezier(.21, .98, .6, .99) both;
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+}
+
+.message.is-hiding {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(18px) scale(0.98);
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.primary-button,
+.secondary-button {
+  width: 100%;
+  border: 0;
+  border-radius: 13px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.primary-button {
+  color: white;
+  background: #2563eb;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24);
+}
+
+.secondary-button {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.home-layout {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 20px;
+}
+
+.home-card {
+  width: min(660px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.10);
+  backdrop-filter: blur(16px);
+}
+
+.home-card h1 {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 42px);
+  letter-spacing: -0.06em;
+}
+
+.description {
+  margin: 12px 0 0;
+  max-width: 620px;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.user-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.user-summary div {
+  padding: 14px;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.user-summary span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.user-summary strong {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .home-layout {
+    padding: 18px;
+  }
+
+  .home-card {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .user-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 앱형 고정 화면: 전체 페이지 스크롤/드래그 방지 */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+.page-shell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* UI polish: app-like density and safer internal scrolling */
+:root {
+  --app-bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --line: #d9e2ee;
+  --line-soft: #e8eef6;
+  --text-main: #0f172a;
+  --text-sub: #5f6f85;
+  --primary: #2563eb;
+  --navy: #111827;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--text-main);
+}
+
+button,
+a,
+.nav-item,
+.student-card,
+.equipment-card,
+.unit-select-card,
+.item-type-card {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+select {
+  user-select: text;
+}
+
+::selection {
+  background: rgba(37, 99, 235, .18);
+}
+
+/* Scrollbars only inside panels */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 모든 내부 모달 창 드래그 이동 */
+.draggable-modal-card {
+  will-change: transform;
+}
+
+.draggable-modal-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.draggable-modal-card.is-dragging,
+.draggable-modal-card.is-dragging .draggable-modal-handle {
+  cursor: grabbing;
+}
+
+.draggable-modal-handle button,
+.draggable-modal-handle a,
+.draggable-modal-handle input,
+.draggable-modal-handle select,
+.draggable-modal-handle textarea {
+  cursor: auto;
+}
+
+/* v1.0.1 common modal/loading/password UX */
+.user-menu-action {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, .08);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.user-menu-action:hover { background: rgba(255, 255, 255, .14); }
+.modal-overlay[hidden] { display: none !important; }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .42);
+}
+.password-change-modal {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 13px;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, .32);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+}
+.password-change-modal .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.password-change-modal h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+.password-change-modal .modal-head button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+.password-change-modal label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+.password-change-modal input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+  padding: 11px 12px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+}
+.password-change-modal input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+}
+.password-change-modal .modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+button.is-loading,
+.primary-button.is-loading,
+.secondary-button.is-loading {
+  opacity: .72;
+  cursor: wait;
+}
+.auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 12px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 13px;
+  font-weight: 900;
+}
+.auth-loading::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid rgba(37, 99, 235, .22);
+  border-top-color: #2563eb;
+  border-radius: 999px;
+  animation: auth-spin .75s linear infinite;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+/* v1.0.15 global password modal: sidebar/layout modal collision fix */
+.password-modal-overlay[hidden] {
+  display: none !important;
+}
+
+.password-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .48);
+}
+
+.password-modal-card {
+  width: min(420px, calc(100vw - 48px));
+  display: grid;
+  gap: 13px;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, .32);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+  transform: none !important;
+}
+
+.password-modal-card .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.password-modal-card h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+
+.password-modal-card .modal-head button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.password-modal-card label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.password-modal-card input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+  padding: 11px 12px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+}
+
+.password-modal-card input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+}
+
+.password-modal-card .modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+body.password-modal-open {
+  overflow: hidden;
+}
+

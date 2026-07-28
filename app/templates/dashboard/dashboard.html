@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}대시보드 | {{ organization_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main dashboard-main-compact">
+    <section class="summary-grid" aria-label="현황 대시보드">
+      <article class="summary-card">
+        <span>현재 대여 중</span>
+        <strong>{{ summary.active_rentals }}건</strong>
+      </article>
+      <article class="summary-card">
+        <span>오늘 반납 예정</span>
+        <strong>{{ summary.today_due }}건</strong>
+      </article>
+      <article class="summary-card">
+        <span>반납 안 함</span>
+        <strong>{{ summary.not_returned }}건</strong>
+      </article>
+    </section>
+
+    <section class="dashboard-body-grid dashboard-calendar-only">
+      <article class="panel calendar-panel">
+          <div class="panel-header calendar-title-row">
+            <div class="calendar-month-control" aria-label="달력 월 이동">
+              <a class="calendar-nav-button" href="{{ prev_month_url }}" aria-label="이전 달">‹</a>
+              <h2>{{ month_label }}</h2>
+              <a class="calendar-nav-button" href="{{ next_month_url }}" aria-label="다음 달">›</a>
+            </div>
+            <a class="calendar-today-button{% if is_current_month_view %} disabled{% endif %}" href="{{ today_month_url }}">오늘</a>
+          </div>
+
+          <div class="calendar" role="grid" aria-label="반납 예정 달력">
+            {% for weekday in weekdays %}
+              <div class="calendar-weekday">{{ weekday }}</div>
+            {% endfor %}
+
+            {% for week in month_calendar %}
+              {% for day in week %}
+                <button
+                  type="button"
+                  class="calendar-day{% if not day.is_current_month %} muted{% endif %}{% if day.is_today %} today{% endif %}{% if day.has_activity %} has-due{% endif %}"
+                  data-date="{{ day.date }}"
+                  data-has-due="{% if day.has_activity %}true{% else %}false{% endif %}"
+                >
+                  <span class="day-number">{{ day.day }}</span>
+                  {% if day.borrowed_count %}
+                    <span class="due-badge borrowed">대여 {{ day.borrowed_count }}건</span>
+                  {% endif %}
+                  {% if day.due_count %}
+                    <span class="due-badge{% if day.overdue_count %} overdue{% endif %}">
+                      {% if day.overdue_count %}안 함 {{ day.overdue_count }}건{% else %}반납 {{ day.due_count }}건{% endif %}
+                    </span>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            {% endfor %}
+          </div>
+      </article>
+
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="dueModal" aria-hidden="true">
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dueModalTitle">
+    <button type="button" class="modal-close" id="dueModalClose" aria-label="닫기">×</button>
+    <div class="modal-header">
+      <h2 id="dueModalTitle">날짜 상세</h2>
+    </div>
+    <div class="modal-body" id="dueModalBody"></div>
+  </section>
+</div>
+
+{{ due_items_json|json_script:'due-items-data' }}
+{{ borrowed_items_json|json_script:'borrowed-items-data' }}
+<script src="{% static 'js/dashboard.js' %}?v=1.0.17"></script>
+{% endblock %}

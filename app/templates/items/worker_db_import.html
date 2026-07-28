@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}근무자 DB 가져오기 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main import-main">
+    <section class="import-layout">
+      <article class="panel import-panel">
+        <h1>근무자 DB 가져오기</h1>
+        <div class="import-warning" role="alert">
+          <strong>근무자 DB를 새 파일 기준으로 반영합니다.</strong>
+          <ul>
+            <li>파일에 없는 기존 근무자는 로그인할 수 없게 처리됩니다.</li>
+          <li>관리자 계정은 최소 1명 이상 있어야 합니다.</li>
+            <li>관리자 여부에 따라 auth/admin.csv가 자동 수정됩니다.</li>
+            <li>현재 로그인 중인 관리자는 파일에 포함되어 있어야 하며 관리자 권한이 유지되어야 합니다.</li>
+            <li>현재 로그인 중인 관리자 비밀번호는 세션 보호를 위해 덮어쓰지 않습니다.</li>
+            <li>가져오기 전 자동 백업 ZIP이 생성됩니다.</li>
+          </ul>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="import-form" data-custom-confirm="근무자 DB를 새 파일 기준으로 반영합니다. 현재 로그인 관리자가 파일에 없거나 관리자 권한이 아니면 차단됩니다. 가져오기 전 자동 백업을 생성합니다. 계속할까요?">
+          {% csrf_token %}
+          <label class="file-drop-field"><span>xlsx 파일 선택</span><input type="file" name="xlsx_file" accept=".xlsx" required></label>
+          <button type="submit" class="action-button import-upload-button" aria-label="업로드" title="업로드">📤</button>
+        </form>
+        {% if errors %}<section class="import-error-box"><h2>업로드 오류</h2><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></section>{% endif %}
+        {% if preview_rows %}
+        <section class="import-preview-box"><h2>읽은 데이터 미리보기</h2><table class="import-example-table"><thead><tr><th>학번</th><th>이름</th><th>비밀번호</th><th>관리자 여부</th></tr></thead><tbody>{% for row in preview_rows %}<tr><td>{{ row.student_id }}</td><td>{{ row.name }}</td><td>입력됨</td><td>{% if row.is_admin %}관리자{% else %}근무자{% endif %}</td></tr>{% endfor %}</tbody></table></section>
+        {% endif %}
+      </article>
+      <aside class="panel import-guide-panel">
+        <h2>작성 형식</h2>
+        <p>첫 행은 제목 행으로 자동 제외됩니다.</p>
+        <table class="import-example-table">
+          <thead><tr><th>학번</th><th>이름</th><th>비밀번호</th><th>관리자 여부</th></tr></thead>
+          <tbody><tr><td>20252731</td><td>조세진</td><td>1234</td><td>관리자</td></tr><tr><td>20250001</td><td>김민수</td><td>1234</td><td>근무자</td></tr></tbody>
+        </table>
+        <ul class="import-rule-list">
+          <li>학번과 이름은 반드시 입력해야 합니다.</li>
+          <li>신규 근무자는 비밀번호를 반드시 입력해야 합니다. 기존 근무자는 비밀번호 칸을 비우면 기존 비밀번호를 유지합니다.</li>
+          <li>관리자 여부는 관리자/근무자 또는 O/X, Y/N, 1/0 형식으로 입력할 수 있습니다.</li>
+          <li>관리자로 입력된 학번은 auth/admin.csv에 자동 반영됩니다.</li>
+          <li>파일에 없는 기존 근무자는 로그인할 수 없게 처리됩니다.</li>
+          <li>관리자 계정은 최소 1명 이상 있어야 합니다.</li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

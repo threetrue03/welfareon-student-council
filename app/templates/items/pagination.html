@@ -1,0 +1,26 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+{% firstof pagination_page_param 'page' as page_param %}
+<nav class="pagination-bar" aria-label="페이지 이동">
+  {% if page_obj.has_previous %}
+    <a class="pagination-arrow" data-ajax-page href="?{{ page_param }}={{ page_obj.previous_page_number }}{% if pagination_query_string %}&{{ pagination_query_string }}{% endif %}" aria-label="이전 페이지">‹</a>
+  {% else %}
+    <span class="pagination-arrow disabled" aria-disabled="true">‹</span>
+  {% endif %}
+
+  <span class="pagination-pages">
+    {% for page_number in page_obj.page_window %}
+      {% if page_number == page_obj.number %}
+        <strong class="active">{{ page_number }}</strong>
+      {% else %}
+        <a data-ajax-page href="?{{ page_param }}={{ page_number }}{% if pagination_query_string %}&{{ pagination_query_string }}{% endif %}">{{ page_number }}</a>
+      {% endif %}
+    {% endfor %}
+  </span>
+
+  {% if page_obj.has_next %}
+    <a class="pagination-arrow" data-ajax-page href="?{{ page_param }}={{ page_obj.next_page_number }}{% if pagination_query_string %}&{{ pagination_query_string }}{% endif %}" aria-label="다음 페이지">›</a>
+  {% else %}
+    <span class="pagination-arrow disabled" aria-disabled="true">›</span>
+  {% endif %}
+</nav>
+{% endif %}

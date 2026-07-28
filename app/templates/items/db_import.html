@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품 DB 가져오기 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main items-main import-main">
+    <section class="import-layout">
+      <article class="panel import-panel">
+        <h1>물품 DB 가져오기</h1>
+        <div class="import-warning" role="alert">
+          <strong>물품 DB를 새 파일 기준으로 덮어씁니다.</strong>
+          <ul>
+            <li>기존 카테고리와 물품 정보는 삭제됩니다.</li>
+            <li>기존 대여·반납 기록도 함께 삭제됩니다.</li>
+            <li>가져오기 전 자동 백업 ZIP이 생성됩니다.</li>
+          </ul>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="import-form">
+          {% csrf_token %}
+          <label class="file-drop-field">
+            <span>xlsx 파일 선택</span>
+            <input type="file" name="xlsx_file" accept=".xlsx" required>
+          </label>
+          <button type="submit" class="action-button import-upload-button" aria-label="업로드" title="업로드">📤</button>
+        </form>
+
+        {% if errors %}
+          <section class="import-error-box">
+            <h2>업로드 오류</h2>
+            <ul>
+              {% for error in errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if preview_rows %}
+          <section class="import-preview-box">
+            <h2>읽은 데이터 미리보기</h2>
+            <table class="import-example-table">
+              <thead><tr><th>물품명</th><th>물품 위치</th><th>카테고리</th><th>물품 특성</th><th>전체 수량</th><th>현재수량</th></tr></thead>
+              <tbody>
+                {% for row in preview_rows %}
+                  <tr><td>{{ row.name }}</td><td>{{ row.location }}</td><td>{{ row.category }}</td><td>{{ row.item_type_label }}</td><td>{{ row.total_quantity }}</td><td>{{ row.current_quantity }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </section>
+        {% endif %}
+      </article>
+
+      <aside class="panel import-guide-panel">
+        <h2>작성 형식</h2>
+        <p>첫 행은 제목 행으로 자동 제외됩니다.</p>
+        <table class="import-example-table">
+          <thead><tr><th>물품명</th><th>물품 위치</th><th>카테고리</th><th>물품 특성</th><th>전체 수량</th><th>현재수량</th></tr></thead>
+          <tbody>
+            <tr><td>보조배터리</td><td>학생회실 선반 1칸</td><td>전자기기</td><td>비품</td><td>10</td><td></td></tr>
+            <tr><td>우산</td><td>학생회실 우산꽂이</td><td>생활</td><td>비품</td><td>15</td><td></td></tr>
+            <tr><td>A4용지</td><td>학생회실 서랍</td><td>잡화/문서</td><td>소모품</td><td>500</td><td>500</td></tr>
+          </tbody>
+        </table>
+        <ul class="import-rule-list">
+          <li>물품 위치는 대여·반납 화면에서 물품 번호 선택 위에 표시됩니다.</li>
+          <li>카테고리가 없으면 자동 생성됩니다.</li>
+          <li>물품 특성은 비품 또는 소모품으로 입력합니다.</li>
+          <li>비품은 전체 수량만 사용하고 번호가 자동 생성됩니다.</li>
+          <li>소모품은 현재 수량이 비어 있으면 오류로 처리됩니다.</li>
+          <li>오류가 있으면 DB는 변경되지 않습니다.</li>
+          <li>정상 업로드 전 현재 DB와 설정 파일이 자동 백업됩니다.</li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

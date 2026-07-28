@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ page_title }} | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header">
+      <div>
+        <h1>{{ page_title }}</h1>
+      </div>
+      <div class="header-actions">
+        <a class="action-button secondary" href="{% url 'items:category_list' %}">목록으로</a>
+      </div>
+    </header>
+
+    <form method="post" class="panel item-form-card">
+      {% csrf_token %}
+      <div class="form-grid single">
+        <label>
+          <span>카테고리 이름</span>
+          {{ form.name }}
+          {{ form.name.errors }}
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="action-button">저장</button>
+        <a class="text-button" href="{% url 'items:category_list' %}">취소</a>
+      </div>
+    </form>
+  </main>
+</div>
+{% endblock %}

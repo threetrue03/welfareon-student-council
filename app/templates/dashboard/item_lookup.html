@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품으로 조회 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main lookup-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>물품으로 조회</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel lookup-panel">
+      <form class="filter-form item-filter-toolbar lookup-item-toolbar" method="get" data-auto-search-form data-results-target="[data-lookup-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="물품명, 위치 또는 카테고리 검색" autocomplete="off">
+        <select name="type"><option value="">전체 유형</option>{% for value, label in item_type_choices %}<option value="{{ value }}"{% if selected_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <select name="category"><option value="">전체 카테고리</option>{% for category in categories %}<option value="{{ category.id }}"{% if selected_category == category.id|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select>
+        <button type="submit">검색</button>
+      </form>
+      <div data-lookup-results>
+        {% if items %}
+        <div class="item-table-wrap"><table class="item-table lookup-table"><thead><tr><th>물품명</th><th>물품 위치</th><th>유형</th><th>카테고리</th><th>수량/상태</th><th>조회</th></tr></thead><tbody>
+          {% for item in items %}
+          <tr>
+            <td><strong>{{ item.name }}</strong></td>
+            <td>{% if item.location %}{{ item.location }}{% else %}<span class="muted-text">-</span>{% endif %}</td>
+            <td><span class="type-badge {{ item.item_type }}">{{ item.get_item_type_display }}</span></td>
+            <td>{% if item.category %}{{ item.category.name }}{% else %}<span class="muted-text">-</span>{% endif %}</td>
+            <td>{% if item.is_equipment %}<div class="status-pills"><span>전체 {{ item.total_quantity }}</span><span>대여 가능 {{ item.available_unit_count }}</span><span>대여 중 {{ item.borrowed_unit_count }}</span><span>고장 {{ item.broken_unit_count }}</span><span>분실 {{ item.lost_unit_count }}</span></div>{% else %}<div class="quantity-text">현재 {{ item.current_quantity }} / 전체 {{ item.total_quantity }}</div>{% endif %}</td>
+            <td><div class="row-actions table-actions"><a href="?item={{ item.id }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if selected_type %}&type={{ selected_type|urlencode }}{% endif %}{% if selected_category %}&category={{ selected_category|urlencode }}{% endif %}" title="조회" aria-label="조회">🔍</a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">조건에 맞는 물품이 없습니다.</p>{% endif %}
+      </div>
+    </section>
+  </main>
+</div>
+{% if selected_item %}
+<div class="item-modal is-open lookup-detail-modal" id="itemLookupDetail" role="dialog" aria-modal="true" aria-labelledby="itemLookupTitle">
+  <div class="modal-backdrop" onclick="location.href='{% url 'dashboard:item_lookup' %}{% if query or selected_type or selected_category %}?{% if query %}q={{ query|urlencode }}{% endif %}{% if selected_type %}{% if query %}&{% endif %}type={{ selected_type|urlencode }}{% endif %}{% if selected_category %}{% if query or selected_type %}&{% endif %}category={{ selected_category|urlencode }}{% endif %}{% endif %}'"></div>
+  <section class="modal-card item-form-card modal-form lookup-detail-card">
+    <div class="modal-head"><h2 id="itemLookupTitle">물품 상세 조회</h2><a class="modal-close" href="{% url 'dashboard:item_lookup' %}{% if query or selected_type or selected_category %}?{% if query %}q={{ query|urlencode }}{% endif %}{% if selected_type %}{% if query %}&{% endif %}type={{ selected_type|urlencode }}{% endif %}{% if selected_category %}{% if query or selected_type %}&{% endif %}category={{ selected_category|urlencode }}{% endif %}{% endif %}" aria-label="닫기">×</a></div>
+    <div class="lookup-summary-row item-summary-row">
+      <div><span>물품명</span><strong>{{ selected_item.name }}</strong></div>
+      <div><span>물품 위치</span><strong>{% if selected_item.location %}{{ selected_item.location }}{% else %}-{% endif %}</strong></div>
+      <div><span>유형</span><strong>{{ selected_item.get_item_type_display }}</strong></div>
+      <div><span>카테고리</span><strong>{% if selected_item.category %}{{ selected_item.category.name }}{% else %}-{% endif %}</strong></div>
+    </div>
+    <form class="record-date-form lookup-date-form" method="get">
+      <input type="hidden" name="item" value="{{ selected_item.id }}">
+      {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+      {% if selected_type %}<input type="hidden" name="type" value="{{ selected_type }}">{% endif %}
+      {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+      <label><span>시작일</span><input type="date" name="start_date" value="{{ start_date }}"></label>
+      <label><span>종료일</span><input type="date" name="end_date" value="{{ end_date }}"></label>
+      <button type="submit">조회</button>
+    </form>
+    <div class="record-table-wrap lookup-record-table"><table class="record-table"><thead><tr><th>대여 일시</th><th>대여 근무자</th><th>학생</th><th>반납 예정일</th><th>반납일</th><th>반납 여부</th><th>연체</th><th>반납 근무자</th><th>메모</th></tr></thead><tbody>
+      {% for row in record_rows %}
+      <tr><td>{{ row.borrowed_at }}</td><td>{{ row.borrow_worker }}</td><td>{{ row.student }}</td><td>{{ row.due_date }}</td><td>{{ row.returned_at }}</td><td>{{ row.return_status }}</td><td>{{ row.overdue }}</td><td>{{ row.return_worker }}</td><td>{{ row.memo }}</td></tr>
+      {% empty %}<tr><td colspan="9" class="empty-table-cell">조건에 맞는 대여 기록이 없습니다.</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if record_page_obj %}{% with page_obj=record_page_obj pagination_query_string=record_pagination_query_string pagination_page_param='record_page' %}{% include 'items/pagination.html' %}{% endwith %}{% endif %}
+  </section>
+</div>
+{% endif %}
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+<script src="{% static 'js/lookup.js' %}?v=1.0.17"></script>
+{% endblock %}

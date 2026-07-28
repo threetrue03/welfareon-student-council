@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}근무 기록 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main shift-record-main">
+    <header class="dashboard-header items-header clean-header">
+      <div><h1>근무 기록</h1></div>
+    </header>
+    <section class="panel item-list-panel items-layout-panel shift-record-panel">
+      <form class="filter-form shift-record-toolbar" method="get" data-auto-search-form data-results-target="[data-shift-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="근무자 이름 또는 학번 검색" autocomplete="off">
+        <input type="date" name="date" value="{{ selected_date }}">
+        <button type="submit">검색</button>
+      </form>
+      <div data-shift-results>
+        {% if shifts %}
+        <div class="item-table-wrap shift-table-wrap">
+          <table class="item-table shift-record-table">
+            <thead>
+              <tr>
+                <th>근무자 이름</th>
+                <th>근무자 학번</th>
+                <th>출근 시간</th>
+                <th>퇴근 시간</th>
+                <th>보기</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for shift in shifts %}
+              <tr>
+                <td>{% if shift.user %}{{ shift.user.name }}{% else %}삭제됨{% endif %}</td>
+                <td>{% if shift.user %}<strong>{{ shift.user.student_id }}</strong>{% else %}<span class="muted-text">삭제됨</span>{% endif %}</td>
+                <td>{{ shift.started_at|date:'H:i:s' }}</td>
+                <td>{% if shift.ended_at %}{{ shift.ended_at|date:'H:i:s' }}{% else %}<span class="status-pill-open">근무 중</span>{% endif %}</td>
+                <td>
+                  <div class="row-actions table-actions">
+                    <a href="?shift={{ shift.id }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if selected_date %}&date={{ selected_date }}{% endif %}" title="상세 조회" aria-label="상세 조회">🔍</a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include 'items/pagination.html' %}
+        {% else %}
+          <p class="empty-state">조건에 맞는 근무 기록이 없습니다.</p>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</div>
+{% if selected_shift %}
+<div class="item-modal is-open lookup-detail-modal" id="shiftDetailModal" role="dialog" aria-modal="true" aria-labelledby="shiftDetailTitle">
+  <div class="modal-backdrop" onclick="location.href='{% url 'dashboard:shift_records' %}?date={{ selected_date }}{% if query %}&q={{ query|urlencode }}{% endif %}'"></div>
+  <section class="modal-card item-form-card modal-form lookup-detail-card shift-detail-card">
+    <div class="modal-head">
+      <h2 id="shiftDetailTitle">근무 상세</h2>
+      <a class="modal-close" href="{% url 'dashboard:shift_records' %}?date={{ selected_date }}{% if query %}&q={{ query|urlencode }}{% endif %}" aria-label="닫기">×</a>
+    </div>
+    <div class="lookup-summary-row shift-summary-row">
+      <div><span>근무자</span><strong>{% if selected_shift.user %}{{ selected_shift.user.name }}{% else %}삭제됨{% endif %}</strong></div>
+      <div><span>학번</span><strong>{% if selected_shift.user %}{{ selected_shift.user.student_id }}{% else %}삭제됨{% endif %}</strong></div>
+      <div><span>출근 시간</span><strong>{{ selected_shift.started_at|date:'Y-m-d H:i:s' }}</strong></div>
+      <div><span>퇴근 시간</span><strong>{% if selected_shift.ended_at %}{{ selected_shift.ended_at|date:'Y-m-d H:i:s' }}{% else %}근무 중{% endif %}</strong></div>
+    </div>
+
+    <section class="shift-detail-section">
+      <h3>대여 처리 내역</h3>
+      <div class="record-table-wrap lookup-record-table">
+        <table class="record-table">
+          <thead><tr><th>대여 일시</th><th>학생</th><th>물품</th><th>반납 예정일</th><th>메모</th></tr></thead>
+          <tbody>
+          {% for row in rental_rows %}
+            <tr><td>{{ row.borrowed_at }}</td><td>{{ row.student }}</td><td>{{ row.item }}</td><td>{{ row.due_date }}</td><td>{{ row.memo }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="empty-table-cell">해당 근무 중 대여 처리 내역이 없습니다.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="shift-detail-section">
+      <h3>반납 처리 내역</h3>
+      <div class="record-table-wrap lookup-record-table">
+        <table class="record-table">
+          <thead><tr><th>반납 일시</th><th>학생</th><th>물품</th><th>반납 여부</th><th>연체</th></tr></thead>
+          <tbody>
+          {% for row in return_rows %}
+            <tr><td>{{ row.returned_at }}</td><td>{{ row.student }}</td><td>{{ row.item }}</td><td>{{ row.return_status }}</td><td>{{ row.overdue }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="empty-table-cell">해당 근무 중 반납 처리 내역이 없습니다.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>
+{% endif %}
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

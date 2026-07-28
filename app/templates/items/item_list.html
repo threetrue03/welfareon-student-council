@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품 관리 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>물품 관리</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel">
+      <form class="filter-form item-filter-toolbar" method="get" data-auto-search-form data-results-target="[data-management-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="물품명, 위치 또는 카테고리 검색" autocomplete="off">
+        <select name="type">
+          <option value="">전체 유형</option>
+          {% for value, label in item_type_choices %}<option value="{{ value }}"{% if selected_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <select name="category">
+          <option value="">전체 카테고리</option>
+          {% for category in categories %}<option value="{{ category.id }}"{% if selected_category == category.id|stringformat:'s' %} selected{% endif %}>{{ category.name }}</option>{% endfor %}
+        </select>
+        <button type="submit">검색</button>
+        <button class="square-add-button" type="button" data-modal-open="itemCreateModal" aria-label="물품 추가" title="물품 추가">+</button>
+      </form>
+      <div data-management-results>
+        {% if items %}
+          <div class="item-table-wrap"><table class="item-table"><thead><tr><th>물품명</th><th>물품 위치</th><th>유형</th><th>카테고리</th><th>수량/상태</th><th>관리</th></tr></thead><tbody>
+            {% for item in items %}
+            <tr>
+              <td><strong>{{ item.name }}</strong></td>
+              <td>{% if item.location %}{{ item.location }}{% else %}<span class="muted-text">-</span>{% endif %}</td>
+              <td><span class="type-badge {{ item.item_type }}">{{ item.get_item_type_display }}</span></td>
+              <td>{% if item.category %}{{ item.category.name }}{% else %}<span class="muted-text">-</span>{% endif %}</td>
+              <td>{% if item.is_equipment %}<div class="status-pills"><span>전체 {{ item.total_quantity }}</span><span>대여 가능 {{ item.available_unit_count }}</span><span>대여 중 {{ item.borrowed_unit_count }}</span><span>고장 {{ item.broken_unit_count }}</span><span>분실 {{ item.lost_unit_count }}</span></div>{% else %}<div class="quantity-text">현재 {{ item.current_quantity }} / 전체 {{ item.total_quantity }}</div>{% endif %}</td>
+              <td><div class="row-actions table-actions"><button type="button" data-modal-open="itemUpdateModal{{ item.id }}">수정</button><form action="{% url 'items:delete' item.pk %}" method="post" class="inline-delete-form" data-confirm="이 물품을 삭제하시겠습니까? 대여/반납 기록과 연결된 물품은 삭제되지 않습니다.">{% csrf_token %}<button type="submit">삭제</button></form></div></td>
+            </tr>
+            {% endfor %}
+          </tbody></table></div>
+          {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">조건에 맞는 물품이 없습니다.</p>{% endif %}
+
+        {% for item in items %}
+        <div class="item-modal" id="itemUpdateModal{{ item.id }}" role="dialog" aria-modal="true" aria-labelledby="itemUpdateTitle{{ item.id }}" hidden>
+          <div class="modal-backdrop" data-modal-close></div>
+          <form method="post" action="{% url 'items:update' item.pk %}" class="modal-card item-form-card modal-form" data-mode="update" data-old-total="{{ item.total_quantity }}">
+            {% csrf_token %}
+            <div class="modal-head"><h2 id="itemUpdateTitle{{ item.id }}">물품 수정</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+            <div class="form-grid"><label><span>물품 이름</span><input type="text" name="name" value="{{ item.name }}" required></label><label><span>물품 위치</span><input type="text" name="location" value="{{ item.location }}" placeholder="예: 학생회실 선반 1칸"></label><label><span>카테고리</span><select name="category"><option value="">카테고리 없음</option>{% for category in categories %}<option value="{{ category.id }}"{% if item.category_id == category.id %} selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></label></div>
+            <section class="item-kind-section" aria-label="물품 특성 선택"><div class="field-title-row"><span class="field-title">물품 특성</span><small>카테고리와 별개로 관리 방식을 선택합니다.</small></div><div class="item-type-cards"><label class="item-type-card"><input type="radio" name="item_type" value="equipment"{% if item.is_equipment %} checked{% endif %}><span class="item-type-card-body"><strong>비품</strong><em>번호별 대여/반납 상태를 관리합니다.</em></span></label><label class="item-type-card"><input type="radio" name="item_type" value="consumable"{% if item.is_consumable %} checked{% endif %}><span class="item-type-card-body"><strong>소모품</strong><em>현재 수량과 전체 수량을 관리합니다.</em></span></label></div></section>
+            <div class="form-grid quantity-section"><label class="consumable-fields"><span>현재 수량</span><input type="number" name="current_quantity" min="0" value="{{ item.current_quantity|default_if_none:'' }}" placeholder="현재 수량"></label><label><span>전체 수량</span><input type="number" name="total_quantity" min="0" value="{{ item.total_quantity }}" required placeholder="전체 수량"></label><p class="field-help equipment-fields">전체 수량을 줄이면 초과 번호는 비활성 처리됩니다.</p></div>
+            {% if item.is_equipment %}<section class="unit-status-section equipment-fields"><div class="section-heading-row compact-row"><h3>{{ item.name }} 개별 번호</h3></div><div class="unit-grid">{% for unit in item.units.all %}<label class="unit-card"><span>{{ unit.number }}번</span><select name="unit_status_{{ unit.id }}">{% for value, label in status_choices %}<option value="{{ value }}"{% if unit.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endfor %}</div></section>{% endif %}
+            <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+<div class="item-modal{% if active_modal == 'item' %} is-open{% endif %}" id="itemCreateModal" role="dialog" aria-modal="true" aria-labelledby="itemCreateTitle"{% if active_modal != 'item' %} hidden{% endif %}>
+  <div class="modal-backdrop" data-modal-close></div>
+  <form method="post" action="{% url 'items:create' %}" class="modal-card item-form-card modal-form" id="itemCreateForm" data-mode="create" data-old-total="0">
+    {% csrf_token %}<div class="modal-head"><h2 id="itemCreateTitle">물품 추가</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+    {% if item_form.non_field_errors %}<div class="form-errors">{{ item_form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid"><label><span>물품 이름</span>{{ item_form.name }}{{ item_form.name.errors }}</label><label><span>물품 위치</span>{{ item_form.location }}{{ item_form.location.errors }}</label><label><span>카테고리</span>{{ item_form.category }}{{ item_form.category.errors }}</label></div>
+    <section class="item-kind-section" aria-label="물품 특성 선택"><div class="field-title-row"><span class="field-title">물품 특성</span><small>카테고리와 별개로 관리 방식을 선택합니다.</small></div><div class="item-type-cards"><label class="item-type-card"><input type="radio" name="item_type" value="equipment"{% if item_form.item_type.value == 'equipment' or not item_form.item_type.value %} checked{% endif %}><span class="item-type-card-body"><strong>비품</strong><em>번호별 대여/반납 상태를 관리합니다.</em></span></label><label class="item-type-card"><input type="radio" name="item_type" value="consumable"{% if item_form.item_type.value == 'consumable' %} checked{% endif %}><span class="item-type-card-body"><strong>소모품</strong><em>현재 수량과 전체 수량을 관리합니다.</em></span></label></div>{{ item_form.item_type.errors }}</section>
+    <div class="form-grid quantity-section"><label class="consumable-fields"><span>현재 수량</span>{{ item_form.current_quantity }}{{ item_form.current_quantity.errors }}</label><label><span>전체 수량</span>{{ item_form.total_quantity }}{{ item_form.total_quantity.errors }}</label><p class="field-help equipment-fields">비품은 전체 수량만큼 1번부터 자동으로 번호가 생성됩니다.</p></div>
+    <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+  </form>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

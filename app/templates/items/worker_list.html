@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}근무자 관리 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>근무자 관리</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel">
+      <form class="filter-form worker-management-toolbar" method="get" data-auto-search-form data-results-target="[data-management-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="근무자 이름 또는 학번 검색" autocomplete="off">
+        <select name="role">
+          <option value=""{% if not selected_role %} selected{% endif %}>전체</option>
+          <option value="worker"{% if selected_role == 'worker' %} selected{% endif %}>근무자</option>
+          <option value="admin"{% if selected_role == 'admin' %} selected{% endif %}>관리자</option>
+        </select>
+        <button type="submit">검색</button>
+        <button class="square-add-button" type="button" data-modal-open="workerCreateModal" aria-label="근무자 추가" title="근무자 추가">+</button>
+      </form>
+      <div data-management-results>
+        {% if workers %}
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>학번</th><th>이름</th><th>권한</th><th>상태</th><th>관리</th></tr></thead><tbody>
+          {% for worker in workers %}
+          <tr>
+            <td><strong>{{ worker.student_id }}</strong></td>
+            <td>{{ worker.name }}</td>
+            <td>{% if worker.is_csv_admin %}<span class="type-badge equipment">관리자</span>{% else %}<span class="type-badge consumable">근무자</span>{% endif %}</td>
+            <td>{% if worker.is_active %}활성{% else %}<span class="muted-text">비활성</span>{% endif %}</td>
+            <td>
+              <div class="row-actions table-actions">
+                <button type="button" data-modal-open="workerUpdateModal{{ worker.id }}">수정</button>
+                <form action="{% url 'items:worker_delete' worker.pk %}" method="post" class="inline-delete-form" data-confirm="이 근무자를 비활성화하시겠습니까? 기존 대여/반납/근무 기록은 유지됩니다."{% if worker.is_csv_admin %} data-admin-protected="1"{% endif %}>
+                  {% csrf_token %}
+                  <input type="hidden" name="target_admin_password" value="">
+                  <button type="submit">삭제</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">조건에 맞는 근무자가 없습니다.</p>{% endif %}
+        {% for worker in workers %}
+        <div class="item-modal" id="workerUpdateModal{{ worker.id }}" role="dialog" aria-modal="true" aria-labelledby="workerUpdateTitle{{ worker.id }}" hidden>
+          <div class="modal-backdrop" data-modal-close></div>
+          <form method="post" action="{% url 'items:worker_update' worker.pk %}" class="modal-card item-form-card modal-form compact-modal-form worker-edit-form" data-worker-edit-form data-password-change-confirm="1"{% if worker.is_csv_admin %} data-admin-protected="1"{% endif %}>
+            {% csrf_token %}
+            <input type="hidden" name="target_admin_password" value="">
+            <div class="modal-head"><h2 id="workerUpdateTitle{{ worker.id }}">근무자 수정</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+            <div class="form-grid"><label><span>이름</span><input type="text" name="name" value="{{ worker.name }}" required></label><label><span>학번</span><input type="number" name="student_id" value="{{ worker.student_id }}" required></label></div>
+            <div class="form-grid">
+              <label class="password-reveal-field">
+                <span>현재 비밀번호</span>
+                <div class="password-inline-control">
+                  <input type="password" value="" placeholder="{% if worker.visible_password %}숨김 처리됨{% else %}저장된 표시용 비밀번호 없음{% endif %}" readonly data-worker-password-field data-password-value="{% if not worker.is_csv_admin %}{{ worker.visible_password }}{% endif %}">
+                  <button type="button" class="password-eye-button" data-worker-password-toggle data-reveal-url="{% url 'items:worker_password_reveal' worker.pk %}"{% if worker.is_csv_admin %} data-admin-password-protected="1"{% endif %} aria-label="비밀번호 보기">🙈</button>
+                </div>
+              </label>
+              <label><span>새 비밀번호</span><input type="password" name="password" placeholder="비워두면 기존 비밀번호 유지" data-new-password-field></label>
+            </div>
+            <label class="toggle-field inline-toggle"><span>관리자 권한 여부</span><input type="checkbox" name="is_admin"{% if worker.is_csv_admin %} checked{% endif %}></label>
+            <p class="field-help">관리자 토글을 저장하면 auth/admin.csv가 자동 수정됩니다.</p>
+            {% if worker.is_csv_admin %}<p class="field-help danger-help">관리자 계정 수정, 삭제, 비밀번호 확인 시 해당 관리자 비밀번호 입력이 필요합니다.</p>{% endif %}
+            <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+<div class="item-modal" id="workerCreateModal" role="dialog" aria-modal="true" aria-labelledby="workerCreateTitle" hidden>
+  <div class="modal-backdrop" data-modal-close></div>
+  <form method="post" action="{% url 'items:worker_create' %}" class="modal-card item-form-card modal-form compact-modal-form">
+    {% csrf_token %}
+    <div class="modal-head"><h2 id="workerCreateTitle">근무자 추가</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+    <div class="form-grid"><label><span>이름</span><input type="text" name="name" placeholder="이름" required></label><label><span>학번</span><input type="number" name="student_id" placeholder="학번" required></label></div>
+    <div class="form-grid"><label><span>비밀번호</span><input type="password" name="password" placeholder="비밀번호" required></label><label class="toggle-field inline-toggle"><span>관리자 권한 여부</span><input type="checkbox" name="is_admin"></label></div>
+    <p class="field-help">관리자 토글을 저장하면 auth/admin.csv가 자동 수정됩니다.</p>
+    <div class="form-actions modal-actions"><button type="submit" class="action-button">추가</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+  </form>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ page_title }} | {{ organization_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+
+  <main class="dashboard-main center-main">
+    <section class="panel coming-soon-card">
+      <p class="page-kicker">{{ page_title }}</p>
+      <h1>{{ page_title }} 화면은 준비 중입니다.</h1>
+      <p>아직 구현되지 않은 기능입니다.</p>
+      <a class="back-link" href="{% url 'dashboard:home' %}">대시보드로 돌아가기</a>
+    </section>
+  </main>
+</div>
+{% endblock %}

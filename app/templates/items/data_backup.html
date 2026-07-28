@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}DB 전체 백업 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main import-main">
+    <section class="import-layout">
+      <article class="panel import-panel">
+        <h1>DB 전체 백업</h1>
+        <div class="import-warning" role="alert">
+          <strong>현재 운영 데이터를 ZIP 파일로 백업합니다.</strong>
+          <ul>
+            <li>대여 내역, 반납 내역, 학생 목록, 물품 목록, 근무자 목록이 들어 있는 db.sqlite3를 포함합니다.</li>
+            <li>관리자 CSV, 학과(부) 설정, 구글 시트 설정 파일이 있으면 함께 포함합니다.</li>
+            <li>학생/물품/근무자 DB 가져오기 전에는 자동 백업도 생성됩니다.</li>
+          </ul>
+        </div>
+        <form method="post" class="import-form" data-custom-confirm="현재 운영 DB와 설정 파일을 백업 ZIP으로 생성합니다. 계속할까요?">
+          {% csrf_token %}
+          <label class="file-drop-field backup-summary-field"><span>백업 파일 생성</span><em>WelfareON_backup_날짜_시간_manual.zip</em></label>
+          <button type="submit" class="action-button import-upload-button" aria-label="백업 다운로드" title="백업 다운로드">💾</button>
+        </form>
+      </article>
+      <aside class="panel import-guide-panel">
+        <h2>최근 백업</h2>
+        {% if backups %}
+        <ul class="import-rule-list">
+          {% for backup in backups %}
+          <li>{{ backup.name }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">아직 생성된 백업이 없습니다.</p>
+        {% endif %}
+      </aside>
+    </section>
+  </main>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

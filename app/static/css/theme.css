@@ -1,0 +1,352 @@
+/* v1.0.17 theme and unified loading feedback */
+:root {
+  --wo-bg-page: #f3f6fb;
+  --wo-bg-soft: #f8fafc;
+  --wo-surface: #ffffff;
+  --wo-surface-2: #f8fafc;
+  --wo-input: #ffffff;
+  --wo-text: #0f172a;
+  --wo-text-sub: #64748b;
+  --wo-border: #e2e8f0;
+  --wo-border-strong: #cbd5e1;
+  --wo-primary: #2563eb;
+  --wo-primary-soft: #dbeafe;
+  --wo-danger: #dc2626;
+  --wo-success: #16a34a;
+  --wo-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  --wo-bg-page: #0f172a;
+  --wo-bg-soft: #111827;
+  --wo-surface: #111827;
+  --wo-surface-2: #1f2937;
+  --wo-input: #0b1220;
+  --wo-text: #e5e7eb;
+  --wo-text-sub: #9ca3af;
+  --wo-border: #334155;
+  --wo-border-strong: #475569;
+  --wo-primary: #60a5fa;
+  --wo-primary-soft: rgba(96, 165, 250, .16);
+  --wo-danger: #f87171;
+  --wo-success: #34d399;
+  --wo-shadow: 0 18px 42px rgba(0, 0, 0, .28);
+}
+
+.button-spinner,
+button.is-loading::before {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: welfareon-spin .75s linear infinite;
+}
+
+button.is-loading::before { content: none; }
+
+button.is-loading,
+.button-loading,
+.primary-button.is-loading,
+.secondary-button.is-loading,
+.action-button.is-loading,
+.borrow-submit.is-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  opacity: .78;
+  cursor: wait !important;
+  pointer-events: none;
+}
+
+button.is-loading[disabled] { opacity: .78; }
+
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .06);
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.theme-toggle-row input {
+  appearance: none;
+  width: 38px;
+  height: 22px;
+  position: relative;
+  flex: 0 0 auto;
+  border: 1px solid rgba(148, 163, 184, .45);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .35);
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+
+.theme-toggle-row input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  transition: transform .16s ease;
+}
+
+.theme-toggle-row input:checked {
+  border-color: rgba(96, 165, 250, .7);
+  background: #2563eb;
+}
+
+.theme-toggle-row input:checked::after { transform: translateX(16px); }
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at top left, rgba(96, 165, 250, 0.10), transparent 30%),
+    linear-gradient(135deg, #0f172a 0%, #111827 100%) !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .dashboard-main,
+html.theme-dark .items-main,
+html.theme-dark .page-shell,
+html.theme-dark .home-layout,
+html.theme-dark .auth-page {
+  background: transparent !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .panel,
+html.theme-dark .summary-card,
+html.theme-dark .home-card,
+html.theme-dark .auth-card,
+html.theme-dark .category-item,
+html.theme-dark .item-list-panel,
+html.theme-dark .category-panel,
+html.theme-dark .item-form-card,
+html.theme-dark .equipment-card,
+html.theme-dark .student-card,
+html.theme-dark .unit-select-card,
+html.theme-dark .cart-panel,
+html.theme-dark .selected-item-panel,
+html.theme-dark .selected-item-box,
+html.theme-dark .lookup-detail-card,
+html.theme-dark .lookup-summary-row,
+html.theme-dark .record-table-wrap,
+html.theme-dark .item-table-wrap,
+html.theme-dark .modal-card,
+html.theme-dark .password-modal-card,
+html.theme-dark .password-change-modal,
+html.theme-dark .rental-alert-card,
+html.theme-dark .date-modal-card,
+html.theme-dark .message,
+html.theme-dark .backup-summary-field {
+  border-color: var(--wo-border) !important;
+  background: var(--wo-surface) !important;
+  color: var(--wo-text) !important;
+  box-shadow: var(--wo-shadow) !important;
+}
+
+html.theme-dark .sidebar {
+  border-right: 1px solid rgba(148, 163, 184, .14);
+  background: #0b1220 !important;
+}
+
+html.theme-dark .user-popover {
+  border-color: var(--wo-border) !important;
+  background: #111827 !important;
+}
+
+html.theme-dark h1,
+html.theme-dark h2,
+html.theme-dark h3,
+html.theme-dark strong,
+html.theme-dark .dashboard-header h1,
+html.theme-dark .item-form-card label,
+html.theme-dark .type-select-field,
+html.theme-dark .password-modal-card label,
+html.theme-dark .password-change-modal label {
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .description,
+html.theme-dark .summary-card span,
+html.theme-dark .muted-text,
+html.theme-dark .quantity-text,
+html.theme-dark .field-help,
+html.theme-dark .section-heading-row p,
+html.theme-dark .category-item span,
+html.theme-dark .category-item p,
+html.theme-dark .empty-state,
+html.theme-dark .user-popover > span,
+html.theme-dark .user-popover p,
+html.theme-dark .table-subtext,
+html.theme-dark .record-meta,
+html.theme-dark small {
+  color: var(--wo-text-sub) !important;
+}
+
+html.theme-dark .page-kicker,
+html.theme-dark .section-label,
+html.theme-dark .eyebrow,
+html.theme-dark a {
+  color: var(--wo-primary) !important;
+}
+
+html.theme-dark input,
+html.theme-dark select,
+html.theme-dark textarea,
+html.theme-dark .filter-form input,
+html.theme-dark .filter-form select,
+html.theme-dark .item-form-card input,
+html.theme-dark .item-form-card select,
+html.theme-dark .selected-item-field input,
+html.theme-dark .selected-item-field select,
+html.theme-dark .password-modal-card input,
+html.theme-dark .password-change-modal input {
+  border-color: var(--wo-border) !important;
+  background: var(--wo-input) !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark input::placeholder,
+html.theme-dark textarea::placeholder { color: #64748b !important; }
+
+html.theme-dark input:focus,
+html.theme-dark select:focus,
+html.theme-dark textarea:focus {
+  border-color: var(--wo-primary) !important;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, .16) !important;
+  outline: none !important;
+}
+
+html.theme-dark .item-table,
+html.theme-dark .record-table,
+html.theme-dark .date-detail-table {
+  background: var(--wo-surface) !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .item-table th,
+html.theme-dark .record-table th,
+html.theme-dark .date-detail-table th {
+  border-color: var(--wo-border) !important;
+  background: var(--wo-surface-2) !important;
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .item-table td,
+html.theme-dark .record-table td,
+html.theme-dark .date-detail-table td {
+  border-color: var(--wo-border) !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .item-table tr:hover td,
+html.theme-dark .record-table tr:hover td {
+  background: rgba(96, 165, 250, .06) !important;
+}
+
+html.theme-dark .text-button,
+html.theme-dark .secondary-button,
+html.theme-dark .row-actions a,
+html.theme-dark .user-menu-action,
+html.theme-dark .pagination a,
+html.theme-dark .pagination span,
+html.theme-dark .sidebar-user-button,
+html.theme-dark .sidebar-logout button {
+  border-color: rgba(96, 165, 250, .16) !important;
+  background: rgba(96, 165, 250, .12) !important;
+  color: #bfdbfe !important;
+}
+
+html.theme-dark .row-actions button,
+html.theme-dark .confirm-cancel {
+  background: rgba(248, 113, 113, .15) !important;
+  color: #fecaca !important;
+}
+
+html.theme-dark .primary-button,
+html.theme-dark .action-button,
+html.theme-dark .borrow-submit,
+html.theme-dark .selected-item-action,
+html.theme-dark .filter-form button {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .status-pills span,
+html.theme-dark .type-badge,
+html.theme-dark .badge,
+html.theme-dark .calendar-count-pill {
+  border-color: rgba(148, 163, 184, .18) !important;
+  background: rgba(148, 163, 184, .14) !important;
+  color: #dbeafe !important;
+}
+
+html.theme-dark .type-badge.consumable,
+html.theme-dark .status-success,
+html.theme-dark .paid-badge {
+  background: rgba(52, 211, 153, .14) !important;
+  color: #a7f3d0 !important;
+}
+
+html.theme-dark .status-danger,
+html.theme-dark .unpaid-badge,
+html.theme-dark .blacklist-badge {
+  background: rgba(248, 113, 113, .14) !important;
+  color: #fecaca !important;
+}
+
+html.theme-dark .calendar-day,
+html.theme-dark .calendar-weekday,
+html.theme-dark .calendar-nav a,
+html.theme-dark .calendar-nav span,
+html.theme-dark .date-detail-section {
+  border-color: var(--wo-border) !important;
+  background: var(--wo-surface) !important;
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .calendar-day:hover,
+html.theme-dark .calendar-day.has-data {
+  background: rgba(96, 165, 250, .10) !important;
+}
+
+html.theme-dark .calendar-day.today {
+  border-color: rgba(96, 165, 250, .72) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, .12) inset !important;
+}
+
+html.theme-dark .modal-backdrop,
+html.theme-dark .password-modal-overlay,
+html.theme-dark .rental-alert-backdrop,
+html.theme-dark .date-modal {
+  background: rgba(0, 0, 0, .58) !important;
+}
+
+html.theme-dark .message {
+  backdrop-filter: blur(12px);
+}
+
+html.theme-dark *::-webkit-scrollbar-thumb { background: #475569; }
+html.theme-dark *::-webkit-scrollbar-track { background: transparent; }
+
+html.theme-dark .item-panel.is-loading .item-selection-split::after {
+  background: linear-gradient(90deg, rgba(15, 23, 42, .08), rgba(96, 165, 250, .14), rgba(15, 23, 42, .08));
+  background-size: 220% 100%;
+}

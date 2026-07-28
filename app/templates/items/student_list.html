@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}학생 관리 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.17">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header"><div><h1>학생 관리</h1></div></header>
+    <section class="panel item-list-panel items-layout-panel">
+      <form class="filter-form student-management-toolbar" method="get" data-auto-search-form data-results-target="[data-management-results]">
+        <input type="search" name="q" value="{{ query }}" placeholder="학생 이름 또는 학번 검색" autocomplete="off">
+        <button type="submit">검색</button>
+        <button class="square-add-button" type="button" data-modal-open="studentCreateModal" aria-label="학생 추가" title="학생 추가">+</button>
+      </form>
+      <div data-management-results>
+        {% if students %}
+        <div class="item-table-wrap"><table class="item-table"><thead><tr><th>학번</th><th>이름</th><th>학생회비</th><th>연체 횟수</th><th>블랙리스트</th><th>관리</th></tr></thead><tbody>
+          {% for student in students %}
+          <tr>
+            <td><strong>{{ student.student_id }}</strong></td><td>{{ student.name }}</td><td>{{ student.get_fee_status_display }}</td><td>{{ student.overdue_count }}</td><td>{% if student.is_blacklisted %}예{% else %}아니오{% endif %}</td>
+            <td><div class="row-actions table-actions"><button type="button" data-modal-open="studentUpdateModal{{ student.id }}">수정</button><form action="{% url 'items:student_delete' student.pk %}" method="post" class="inline-delete-form" data-confirm="정말 이 학생을 삭제하시겠습니까? 현재 대여 중인 물품이 있으면 삭제되지 않습니다.">{% csrf_token %}<button type="submit">삭제</button></form></div></td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% include 'items/pagination.html' %}
+        {% else %}<p class="empty-state">조건에 맞는 학생이 없습니다.</p>{% endif %}
+        {% for student in students %}
+        <div class="item-modal" id="studentUpdateModal{{ student.id }}" role="dialog" aria-modal="true" aria-labelledby="studentUpdateTitle{{ student.id }}" hidden>
+          <div class="modal-backdrop" data-modal-close></div>
+          <form method="post" action="{% url 'items:student_update' student.pk %}" class="modal-card item-form-card modal-form compact-modal-form">
+            {% csrf_token %}<div class="modal-head"><h2 id="studentUpdateTitle{{ student.id }}">학생 수정</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+            <div class="form-grid"><label><span>학생 이름</span><input type="text" name="name" value="{{ student.name }}" required></label><label><span>학생 학번</span><input type="number" name="student_id" value="{{ student.student_id }}" required></label></div>
+            <div class="form-grid"><label><span>학생회비 납부 여부</span><select name="fee_status">{% for value, label in fee_status_choices %}<option value="{{ value }}"{% if student.fee_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><label><span>연체 횟수</span><input type="number" name="overdue_count" min="0" value="{{ student.overdue_count }}" required></label></div>
+            <label class="toggle-field"><span>블랙리스트 여부</span><input type="checkbox" name="is_blacklisted"{% if student.is_blacklisted %} checked{% endif %}></label>
+            <div class="form-actions modal-actions"><button type="submit" class="action-button">저장</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+<div class="item-modal" id="studentCreateModal" role="dialog" aria-modal="true" aria-labelledby="studentCreateTitle" hidden>
+  <div class="modal-backdrop" data-modal-close></div>
+  <form method="post" action="{% url 'items:student_create' %}" class="modal-card item-form-card modal-form compact-modal-form">
+    {% csrf_token %}<div class="modal-head"><h2 id="studentCreateTitle">학생 추가</h2><button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button></div>
+    <div class="form-grid"><label><span>학생 이름</span><input type="text" name="name" placeholder="학생 이름" required></label><label><span>학생 학번</span><input type="number" name="student_id" placeholder="학생 학번" required></label></div>
+    <div class="form-actions modal-actions"><button type="submit" class="action-button">추가</button><button type="button" class="text-button" data-modal-close>취소</button></div>
+  </form>
+</div>
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

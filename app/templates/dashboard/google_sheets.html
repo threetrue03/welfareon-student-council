@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}구글 시트 연동 | {{ organization_name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main google-sheets-main">
+    <header class="dashboard-header items-header clean-header">
+      <div>
+        <h1>구글 시트 연동</h1>
+      </div>
+    </header>
+
+    <section class="panel google-sheet-panel">
+      <div class="google-sheet-intro">
+        <h2>오늘 데이터 동기화</h2>
+        <p>프로그램 내부 DB를 원본으로 유지하고, 오늘자 운영 현황만 지정한 구글 스프레드시트에 덮어씁니다.</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="google-sheet-form" id="googleSheetForm" data-loading-form>
+        {% csrf_token %}
+        <div class="google-sheet-grid">
+          <label>
+            <span>스프레드시트 ID</span>
+            <input type="text" name="spreadsheet_id" value="{{ config.spreadsheet_id }}" placeholder="구글 스프레드시트 ID 입력" autocomplete="off">
+          </label>
+          <label>
+            <span>서비스 계정 JSON 경로</span>
+            <input type="text" name="service_account_path" value="{{ config.service_account_path }}" placeholder="연동 시에만 입력 또는 업로드" autocomplete="off">
+          </label>
+          <label class="google-sheet-file-field">
+            <span>서비스 계정 JSON 업로드</span>
+            <input type="file" name="service_account_file" accept="application/json,.json">
+          </label>
+        </div>
+
+        <div class="google-sheet-status">
+          <div><span>마지막 동기화 날짜</span><strong>{{ config.last_synced_date|default:'-' }}</strong></div>
+          <div><span>마지막 동기화 시간</span><strong>{{ config.last_synced_at|default:'-' }}</strong></div>
+          <div><span>연동 상태</span><strong>{% if config.last_error %}확인 필요{% else %}대기 중{% endif %}</strong></div>
+        </div>
+
+        {% if config.last_error %}
+        <div class="import-warning google-sheet-error">
+          <strong>최근 오류</strong>
+          <span>{{ config.last_error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="google-sheet-actions">
+          <button type="submit" name="action" value="save" class="secondary-button" data-loading-text="저장 중...">설정 저장</button>
+          <button type="submit" name="action" value="test" class="secondary-button" data-loading-action="test" data-loading-title="연결 테스트 중" data-loading-message="구글 시트 권한과 서비스 계정 정보를 확인하고 있습니다.">연결 테스트</button>
+          <button type="submit" name="action" value="sync" class="action-button" data-loading-action="sync" data-loading-title="오늘 데이터 동기화 중" data-loading-message="오늘자 운영 현황을 구글 스프레드시트에 덮어쓰고 있습니다.">오늘 데이터 동기화</button>
+        </div>
+
+      </form>
+    </section>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/dashboard.js' %}?v=1.0.17" defer></script>{% endblock %}
