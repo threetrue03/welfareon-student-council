@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}관리자 학번 관리 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.17">
+<link rel="stylesheet" href="{% static 'css/items.css' %}?v=1.0.18">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main items-main">
+    <header class="dashboard-header items-header clean-header">
+      <div>
+        <h1>관리자 학번 관리</h1>
+        <p class="description">등록된 근무자 계정에 관리자 권한을 추가하거나 수정·삭제합니다.</p>
+      </div>
+      <div class="header-actions">
+        <button class="action-button" type="button" data-modal-open="adminStudentIdCreateModal">관리자 추가</button>
+      </div>
+    </header>
+
+    <section class="panel item-list-panel items-layout-panel">
+      <div class="section-heading-row">
+        <div>
+          <h2>관리자 학번 목록</h2>
+          <p>관리자는 앱 설정과 DB 관리 기능에 접근할 수 있습니다. 현재 로그인한 본인의 권한은 다른 관리자가 변경해야 합니다.</p>
+        </div>
+      </div>
+      {% if admin_rows %}
+        <div class="item-table-wrap">
+          <table class="item-table">
+            <thead><tr><th>관리자 학번</th><th>이름</th><th>계정 상태</th><th>관리</th></tr></thead>
+            <tbody>
+              {% for row in admin_rows %}
+                <tr>
+                  <td>
+                    <strong>{{ row.student_id }}</strong>
+                    {% if row.is_current %}<span class="type-badge equipment">현재 로그인</span>{% endif %}
+                  </td>
+                  <td>{% if row.user %}{{ row.user.name }}{% else %}<span class="muted-text">연결된 근무자 없음</span>{% endif %}</td>
+                  <td>
+                    {% if row.user and row.user.is_active %}
+                      <span class="type-badge equipment">활성</span>
+                    {% elif row.user %}
+                      <span class="type-badge consumable">비활성</span>
+                    {% else %}
+                      <span class="muted-text">계정 없음</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if row.is_current %}
+                      <span class="muted-text">본인 권한 보호</span>
+                    {% else %}
+                      <div class="row-actions table-actions">
+                        <button type="button" data-modal-open="adminStudentIdUpdateModal{{ forloop.counter }}">수정</button>
+                        <form method="post" class="inline-delete-form" data-confirm="{{ row.student_id }} 관리자 권한을 삭제하시겠습니까? 해당 계정은 일반 근무자로 변경됩니다.">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="delete">
+                          <input type="hidden" name="old_student_id" value="{{ row.student_id }}">
+                          <button type="submit">삭제</button>
+                        </form>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="empty-state">등록된 관리자 학번이 없습니다.</p>
+      {% endif %}
+    </section>
+  </main>
+</div>
+
+<div class="item-modal" id="adminStudentIdCreateModal" role="dialog" aria-modal="true" aria-labelledby="adminStudentIdCreateTitle" hidden>
+  <div class="modal-backdrop" data-modal-close></div>
+  <form method="post" class="modal-card item-form-card modal-form compact-modal-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <div class="modal-head">
+      <h2 id="adminStudentIdCreateTitle">관리자 학번 추가</h2>
+      <button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button>
+    </div>
+    <label>
+      <span>관리자로 지정할 근무자 학번</span>
+      <input type="text" name="student_id" inputmode="numeric" pattern="[0-9]+" maxlength="20" placeholder="학번" required>
+    </label>
+    <p class="field-help">먼저 근무자 관리에 등록된 활성 계정만 추가할 수 있습니다.</p>
+    <div class="form-actions modal-actions">
+      <button type="submit" class="action-button">추가</button>
+      <button type="button" class="text-button" data-modal-close>취소</button>
+    </div>
+  </form>
+</div>
+
+{% for row in admin_rows %}
+  {% if not row.is_current %}
+    <div class="item-modal" id="adminStudentIdUpdateModal{{ forloop.counter }}" role="dialog" aria-modal="true" aria-labelledby="adminStudentIdUpdateTitle{{ forloop.counter }}" hidden>
+      <div class="modal-backdrop" data-modal-close></div>
+      <form method="post" class="modal-card item-form-card modal-form compact-modal-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update">
+        <input type="hidden" name="old_student_id" value="{{ row.student_id }}">
+        <div class="modal-head">
+          <h2 id="adminStudentIdUpdateTitle{{ forloop.counter }}">관리자 학번 수정</h2>
+          <button class="modal-close" type="button" data-modal-close aria-label="닫기">×</button>
+        </div>
+        <label>
+          <span>관리자 학번</span>
+          <input type="text" name="student_id" inputmode="numeric" pattern="[0-9]+" maxlength="20" value="{{ row.student_id }}" required>
+        </label>
+        <p class="field-help">기존 계정은 일반 근무자로 변경되고, 새 학번의 계정에 관리자 권한이 부여됩니다.</p>
+        <div class="form-actions modal-actions">
+          <button type="submit" class="action-button">저장</button>
+          <button type="button" class="text-button" data-modal-close>취소</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+{% endfor %}
+
+<script src="{% static 'js/items.js' %}?v=1.0.17"></script>
+{% endblock %}

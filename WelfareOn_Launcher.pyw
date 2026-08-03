@@ -1254,6 +1254,28 @@ class WelfareLauncher:
                 self.root.after(0, self.status_var.set, "프로그램 시작 실패")
                 return
 
+            self.root.after(0, self.status_var.set, "데이터베이스 업데이트를 확인하는 중입니다...")
+            append_log("Django 데이터베이스 마이그레이션 확인")
+            _migration_code, migration_output = run_hidden_stream(
+                [str(py), "manage.py", "migrate", "--noinput"],
+                cwd=APP_DIR,
+                on_output=lambda line: append_log("[migrate] " + line),
+            )
+            migration_applied = any(
+                line.strip().startswith("Applying ")
+                for line in migration_output.splitlines()
+            )
+            if migration_applied:
+                append_log("프로그램 데이터베이스 업데이트 적용 완료")
+                self.root.after(
+                    0,
+                    messagebox.showinfo,
+                    "복지온 업데이트 완료",
+                    "새로운 프로그램 업데이트가 적용되었습니다.\n데이터베이스 준비가 완료되었습니다.",
+                )
+            else:
+                append_log("적용할 데이터베이스 업데이트 없음")
+
             self.root.after(0, self.status_var.set, "서버를 시작하는 중입니다...")
             append_log("Django 서버 실행")
             LOG_DIR.mkdir(parents=True, exist_ok=True)

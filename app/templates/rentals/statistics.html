@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}물품 통계 | {{ organization_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1.0.18">
+<link rel="stylesheet" href="{% static 'css/rentals.css' %}?v=1.0.18">
+{% endblock %}
+{% block content %}
+<div class="app-layout">
+  {% include 'includes/sidebar.html' %}
+  <main class="dashboard-main statistics-main">
+    <section class="panel statistics-toolbar">
+      <div>
+        <span class="statistics-eyebrow">물품 기록</span>
+        <h1>대여·반납 통계</h1>
+        <p>{{ period_label }}</p>
+      </div>
+      <form class="statistics-year-form" method="get">
+        <input type="hidden" name="period" value="{{ period_key }}">
+        {% if period_key == 'custom' %}
+          <input type="hidden" name="start_date" value="{{ custom_start_date }}">
+          <input type="hidden" name="end_date" value="{{ custom_end_date }}">
+        {% endif %}
+        <label for="statisticsYear">기준 연도</label>
+        <select id="statisticsYear" name="year">
+          {% for year in year_choices %}
+            <option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}년</option>
+          {% endfor %}
+        </select>
+        <button type="submit">적용</button>
+      </form>
+      <nav class="statistics-periods" aria-label="통계 기간">
+        {% for key, label in period_choices %}
+          <a href="?period={{ key }}&year={{ selected_year }}" class="record-filter-chip{% if key == period_key %} active{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <form class="statistics-date-form{% if period_key == 'custom' %} active{% endif %}" method="get">
+        <input type="hidden" name="period" value="custom">
+        <input type="hidden" name="year" value="{{ selected_year }}">
+        <strong>직접 날짜 지정</strong>
+        <label for="statisticsStartDate">
+          <span>시작일</span>
+          <input id="statisticsStartDate" type="date" name="start_date" value="{{ custom_start_date }}" required>
+        </label>
+        <label for="statisticsEndDate">
+          <span>종료일</span>
+          <input id="statisticsEndDate" type="date" name="end_date" value="{{ custom_end_date }}" required>
+        </label>
+        <button type="submit">날짜 조회</button>
+      </form>
+    </section>
+
+    <section class="statistics-summary" aria-label="통계 요약">
+      <article class="statistics-summary-card"><span>비품 대여</span><strong>{{ summary.rentals }}건</strong></article>
+      <article class="statistics-summary-card"><span>비품 반납</span><strong>{{ summary.returns }}건</strong></article>
+      <article class="statistics-summary-card"><span>소모품 지급</span><strong>{{ summary.consumable_quantity }}개</strong></article>
+      <article class="statistics-summary-card danger"><span>연체</span><strong>{{ summary.overdue }}건</strong></article>
+    </section>
+
+    <section class="statistics-grid charts-grid">
+      <article class="panel statistics-card">
+        <header class="statistics-card-header">
+          <div><span>요일 분석</span><h2>요일별 대여·반납</h2></div>
+          <div class="statistics-legend"><span class="rental">대여</span><span class="return">반납</span></div>
+        </header>
+        <div class="dual-chart">
+          {% for row in weekday_rows %}
+            <div class="dual-chart-row">
+              <strong>{{ row.label }}</strong>
+              <div class="dual-chart-bars">
+                <div class="statistics-track"><span class="statistics-bar rental" style="--bar-size: {{ row.rental_percent }}%"></span></div>
+                <div class="statistics-track"><span class="statistics-bar return" style="--bar-size: {{ row.return_percent }}%"></span></div>
+              </div>
+              <span class="dual-chart-value">{{ row.rentals }} / {{ row.returns }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="panel statistics-card">
+        <header class="statistics-card-header">
+          <div><span>시간 분석</span><h2>시간대별 대여·반납</h2></div>
+          <div class="statistics-legend"><span class="rental">대여</span><span class="return">반납</span></div>
+        </header>
+        <div class="dual-chart hourly-chart">
+          {% for row in hourly_rows %}
+            <div class="dual-chart-row">
+              <strong>{{ row.label }}</strong>
+              <div class="dual-chart-bars">
+                <div class="statistics-track"><span class="statistics-bar rental" style="--bar-size: {{ row.rental_percent }}%"></span></div>
+                <div class="statistics-track"><span class="statistics-bar return" style="--bar-size: {{ row.return_percent }}%"></span></div>
+              </div>
+              <span class="dual-chart-value">{{ row.rentals }} / {{ row.returns }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="statistics-grid ranking-grid">
+      <article class="panel statistics-card">
+        <header class="statistics-card-header"><div><span>소모품 제외</span><h2>비품별 대여 순위</h2></div></header>
+        <div class="statistics-ranking-list">
+          {% for row in equipment_rows %}
+            <div class="statistics-ranking-row">
+              <span class="statistics-rank">{{ row.rank }}</span>
+              <div class="statistics-ranking-body">
+                <div><strong>{{ row.label }}</strong><span>{{ row.value }}{{ row.unit }}</span></div>
+                <div class="statistics-track"><span class="statistics-bar equipment" style="--bar-size: {{ row.percent }}%"></span></div>
+              </div>
+            </div>
+          {% empty %}
+            <p class="statistics-empty">선택한 기간의 비품 대여 기록이 없습니다.</p>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="panel statistics-card">
+        <header class="statistics-card-header"><div><span>지급 수량 합계</span><h2>소모품별 지급 통계</h2></div></header>
+        <div class="statistics-ranking-list">
+          {% for row in consumable_rows %}
+            <div class="statistics-ranking-row">
+              <span class="statistics-rank">{{ row.rank }}</span>
+              <div class="statistics-ranking-body">
+                <div><strong>{{ row.label }}</strong><span>{{ row.value }}{{ row.unit }}</span></div>
+                <div class="statistics-track"><span class="statistics-bar consumable" style="--bar-size: {{ row.percent }}%"></span></div>
+              </div>
+            </div>
+          {% empty %}
+            <p class="statistics-empty">선택한 기간의 소모품 지급 기록이 없습니다.</p>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="panel statistics-card overdue-ranking-card">
+      <header class="statistics-card-header">
+        <div><span>늦은 반납 + 현재 미반납 연체</span><h2>학생별 연체 횟수 순위</h2></div>
+      </header>
+      <div class="statistics-ranking-list">
+        {% for row in overdue_rows %}
+          <div class="statistics-ranking-row overdue">
+            <span class="statistics-rank">{{ row.rank }}</span>
+            <div class="statistics-ranking-body">
+              <div>
+                <strong>{{ row.student.name }} <small>{{ row.student.student_id }}</small></strong>
+                <span>{{ row.value }}회{% if row.active_overdue %} · 현재 미반납 {{ row.active_overdue }}건{% endif %}</span>
+              </div>
+              <div class="statistics-track"><span class="statistics-bar overdue" style="--bar-size: {{ row.percent }}%"></span></div>
+            </div>
+          </div>
+        {% empty %}
+          <p class="statistics-empty">선택한 기간의 연체 기록이 없습니다.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

@@ -64,6 +64,8 @@
       <div class="nav-submenu" aria-label="물품 기록 세부 메뉴">
         <a class="nav-subitem{% if record_sub_tab == 'rentals' %} active{% endif %}" href="{% url 'rentals:rental_records' %}" title="대여 기록"><span class="nav-subicon" aria-hidden="true">📝</span><span>대여 기록</span></a>
         <a class="nav-subitem{% if record_sub_tab == 'returns' %} active{% endif %}" href="{% url 'rentals:return_records' %}" title="반납 기록"><span class="nav-subicon" aria-hidden="true">✅</span><span>반납 기록</span></a>
+        <a class="nav-subitem{% if record_sub_tab == 'consumables' %} active{% endif %}" href="{% url 'rentals:consumable_records' %}" title="소모품 기록"><span class="nav-subicon" aria-hidden="true">📋</span><span>소모품 기록</span></a>
+        <a class="nav-subitem{% if record_sub_tab == 'statistics' %} active{% endif %}" href="{% url 'rentals:statistics' %}" title="통계"><span class="nav-subicon" aria-hidden="true">📈</span><span>통계</span></a>
       </div>
     </div>
 
@@ -74,6 +76,10 @@
         <span class="nav-label">관리자</span>
       </button>
       <div class="nav-submenu" aria-label="관리자 세부 메뉴">
+        <a class="nav-subitem{% if settings_sub_tab == 'admin_student_ids' %} active{% endif %}" href="{% url 'dashboard:admin_student_ids' %}" title="관리자 학번 관리">
+          <span class="nav-subicon" aria-hidden="true">🔐</span>
+          <span>관리자 학번 관리</span>
+        </a>
         <a class="nav-subitem{% if settings_sub_tab == 'rental' %} active{% endif %}" href="{% url 'dashboard:rental_settings' %}" title="대여 설정">
           <span class="nav-subicon" aria-hidden="true">📅</span>
           <span>대여 설정</span>

@@ -13,6 +13,7 @@ urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
     path('settings/rental/', views.rental_settings_view, name='rental_settings'),
     path('settings/blacklist/', views.blacklist_settings_view, name='blacklist_settings'),
+    path('admin/student-ids/', views.admin_student_ids_view, name='admin_student_ids'),
     path('admin/shifts/', views.shift_records_view, name='shift_records'),
     path('admin/google-sheets/', views.google_sheets_view, name='google_sheets'),
 ]
