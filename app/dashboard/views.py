@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from accounts.models import ShiftRecord
-from accounts.permissions import admin_required
+from accounts.models import ShiftRecord, User
+from accounts.permissions import AdminCsvWriteError, admin_required, get_admin_ids, write_admin_ids
 from items.models import Category, Item
 from rentals.models import RentalRecord, ReturnRecord
 from rentals.settings_store import get_blacklist_months, get_default_rental_days, get_overdue_limit, save_policy_settings
@@ -25,6 +26,25 @@ from students.models import Student
 
 PAGE_SIZE = 10
 PAGE_WINDOW_SIZE = 8
+
+
+def _clean_admin_student_id(raw_value):
+    student_id = str(raw_value or '').strip()
+    if not student_id:
+        return '', '관리자 학번을 입력해주세요.'
+    if not student_id.isdigit():
+        return '', '관리자 학번은 숫자로만 입력해주세요.'
+    if len(student_id) > User._meta.get_field('student_id').max_length:
+        return '', '관리자 학번은 20자 이하로 입력해주세요.'
+    return student_id, ''
+
+
+def _set_user_admin_state(user, is_admin):
+    if user is None:
+        return
+    user.role = User.Role.ADMIN if is_admin else User.Role.WORKER
+    user.is_staff = is_admin
+    user.save(update_fields=['role', 'is_staff'])
 
 
 def _paginate_queryset(request, queryset, *, page_param='page', page_size=PAGE_SIZE):
@@ -362,6 +382,105 @@ def item_lookup_view(request):
         'end_date': end_date,
     })
 
+
+
+@login_required
+@admin_required
+def admin_student_ids_view(request):
+    if request.method == 'POST':
+        action = request.POST.get('action', '').strip()
+        current_admin_ids = get_admin_ids()
+
+        if action == 'add':
+            student_id, error = _clean_admin_student_id(request.POST.get('student_id'))
+            target_user = User.objects.filter(student_id=student_id, is_active=True).first() if student_id else None
+            if error:
+                messages.error(request, error)
+            elif student_id in current_admin_ids:
+                messages.error(request, '이미 등록된 관리자 학번입니다.')
+            elif target_user is None:
+                messages.error(request, '등록된 활성 근무자 계정의 학번만 관리자로 추가할 수 있습니다.')
+            else:
+                try:
+                    with transaction.atomic():
+                        _set_user_admin_state(target_user, True)
+                        write_admin_ids(current_admin_ids | {student_id})
+                except AdminCsvWriteError as exc:
+                    messages.error(request, str(exc))
+                else:
+                    messages.success(request, f'{student_id} {target_user.name} 계정에 관리자 권한을 추가했습니다.')
+            return redirect('dashboard:admin_student_ids')
+
+        old_student_id = request.POST.get('old_student_id', '').strip()
+        if old_student_id not in current_admin_ids:
+            messages.error(request, '관리자 목록에서 대상 학번을 찾을 수 없습니다.')
+            return redirect('dashboard:admin_student_ids')
+        if old_student_id == str(request.user.student_id):
+            messages.error(request, '현재 로그인한 본인의 관리자 학번은 수정하거나 삭제할 수 없습니다.')
+            return redirect('dashboard:admin_student_ids')
+
+        if action == 'update':
+            student_id, error = _clean_admin_student_id(request.POST.get('student_id'))
+            target_user = User.objects.filter(student_id=student_id, is_active=True).first() if student_id else None
+            if error:
+                messages.error(request, error)
+            elif student_id != old_student_id and student_id in current_admin_ids:
+                messages.error(request, '이미 등록된 관리자 학번입니다.')
+            elif target_user is None:
+                messages.error(request, '등록된 활성 근무자 계정의 학번만 관리자로 지정할 수 있습니다.')
+            elif student_id == old_student_id:
+                messages.info(request, '변경된 관리자 학번이 없습니다.')
+            else:
+                old_user = User.objects.filter(student_id=old_student_id).first()
+                next_admin_ids = (current_admin_ids - {old_student_id}) | {student_id}
+                try:
+                    with transaction.atomic():
+                        _set_user_admin_state(old_user, False)
+                        _set_user_admin_state(target_user, True)
+                        write_admin_ids(next_admin_ids)
+                except AdminCsvWriteError as exc:
+                    messages.error(request, str(exc))
+                else:
+                    messages.success(request, f'관리자 학번을 {old_student_id}에서 {student_id}(으)로 수정했습니다.')
+            return redirect('dashboard:admin_student_ids')
+
+        if action == 'delete':
+            if len(current_admin_ids) <= 1:
+                messages.error(request, '관리자는 최소 1명 이상 남아 있어야 합니다. 마지막 관리자 학번은 삭제할 수 없습니다.')
+            else:
+                target_user = User.objects.filter(student_id=old_student_id).first()
+                try:
+                    with transaction.atomic():
+                        _set_user_admin_state(target_user, False)
+                        write_admin_ids(current_admin_ids - {old_student_id})
+                except AdminCsvWriteError as exc:
+                    messages.error(request, str(exc))
+                else:
+                    label = f'{old_student_id} {target_user.name}' if target_user else old_student_id
+                    messages.success(request, f'{label} 관리자 권한을 삭제했습니다.')
+            return redirect('dashboard:admin_student_ids')
+
+        messages.error(request, '지원하지 않는 관리자 학번 관리 요청입니다.')
+        return redirect('dashboard:admin_student_ids')
+
+    admin_ids = sorted(get_admin_ids())
+    users_by_student_id = {
+        user.student_id: user
+        for user in User.objects.filter(student_id__in=admin_ids)
+    }
+    admin_rows = [
+        {
+            'student_id': student_id,
+            'user': users_by_student_id.get(student_id),
+            'is_current': student_id == str(request.user.student_id),
+        }
+        for student_id in admin_ids
+    ]
+    return render(request, 'dashboard/admin_student_ids.html', {
+        'active_tab': 'admin',
+        'settings_sub_tab': 'admin_student_ids',
+        'admin_rows': admin_rows,
+    })
 
 
 @login_required

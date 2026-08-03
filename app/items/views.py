@@ -12,7 +12,7 @@ from accounts.models import User
 from dashboard.google_sheets import schedule_google_sheet_sync
 from backup_utils import create_backup_archive, recent_backup_archives
 from accounts.permissions import AdminCsvWriteError, admin_required, get_admin_ids, is_admin_student_id, set_admin_membership, write_admin_ids
-from rentals.models import RentalRecord, ReturnRecord
+from rentals.models import ConsumableIssueRecord, RentalRecord, ReturnRecord
 from students.models import Student
 
 from .forms import CategoryForm, ItemForm
@@ -321,9 +321,13 @@ def item_update(request, pk):
 def item_delete(request, pk):
     item = get_object_or_404(Item, pk=pk)
     item_name = item.name
-    linked_record_count = RentalRecord.objects.filter(item=item).count() + ReturnRecord.objects.filter(item=item).count()
+    linked_record_count = (
+        RentalRecord.objects.filter(item=item).count()
+        + ReturnRecord.objects.filter(item=item).count()
+        + ConsumableIssueRecord.objects.filter(item=item).count()
+    )
     if linked_record_count:
-        messages.error(request, f'{item_name} 물품은 대여/반납 기록과 연결되어 있어 삭제할 수 없습니다. 기록 보존을 위해 삭제 대신 상태 변경 또는 수량 조정을 사용해주세요.')
+        messages.error(request, f'{item_name} 물품은 대여/반납/소모품 지급 기록과 연결되어 있어 삭제할 수 없습니다. 기록 보존을 위해 삭제 대신 상태 변경 또는 수량 조정을 사용해주세요.')
         return redirect('items:item_list')
     if item.units.filter(status=EquipmentUnit.Status.BORROWED).exists():
         messages.error(request, f'{item_name} 물품은 현재 대여 중인 번호가 있어 삭제할 수 없습니다.')
@@ -461,6 +465,7 @@ def student_delete(request, pk):
         item_list = ', '.join(f'{record.item.name} {record.unit.number}번' for record in active_records)
         messages.error(request, f'현재 대여 중인 물품이 있어서 학생을 삭제할 수 없습니다. 먼저 반납 처리 후 삭제해주세요. 반납 필요 물품: {item_list}')
         return redirect('items:student_list')
+    ConsumableIssueRecord.objects.filter(student=student).delete()
     ReturnRecord.objects.filter(student=student).delete()
     RentalRecord.objects.filter(student=student).delete()
     student_label = f'{student.student_id} {student.name}'
@@ -660,6 +665,7 @@ def db_import(request):
                         return render(request, 'items/db_import.html', {'active_tab': 'db', 'db_sub_tab': 'inventory_import', 'errors': errors, 'preview_rows': preview_rows})
                     try:
                         with transaction.atomic():
+                            ConsumableIssueRecord.objects.all().delete()
                             ReturnRecord.objects.all().delete()
                             RentalRecord.objects.all().delete()
                             EquipmentUnit.objects.all().delete()
@@ -735,6 +741,7 @@ def student_db_import(request):
                         return render(request, 'items/student_db_import.html', {'active_tab': 'db', 'db_sub_tab': 'student_import', 'errors': errors, 'preview_rows': preview_rows})
                     try:
                         with transaction.atomic():
+                            ConsumableIssueRecord.objects.all().delete()
                             ReturnRecord.objects.all().delete()
                             RentalRecord.objects.all().delete()
                             EquipmentUnit.objects.filter(status=EquipmentUnit.Status.BORROWED).update(status=EquipmentUnit.Status.AVAILABLE)

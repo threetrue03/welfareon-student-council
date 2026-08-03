@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -7,6 +9,9 @@ from .models import Category, EquipmentUnit, Item
 
 class ItemManagementTests(TestCase):
     def setUp(self):
+        admin_patch = patch('accounts.permissions.is_admin_user', return_value=True)
+        admin_patch.start()
+        self.addCleanup(admin_patch.stop)
         self.user = User.objects.create_user(student_id='20252731', name='조세진', password='1')
         self.client.login(student_id='20252731', password='1')
 
@@ -37,11 +42,12 @@ class ItemManagementTests(TestCase):
         self.assertEqual(item.current_quantity, 320)
         self.assertEqual(item.total_quantity, 500)
 
-    def test_delete_category_keeps_item_uncategorized(self):
+    def test_delete_category_with_items_is_blocked(self):
         category = Category.objects.create(name='생활')
         item = Item.objects.create(name='우산', item_type=Item.ItemType.EQUIPMENT, category=category, total_quantity=1)
         EquipmentUnit.objects.create(item=item, number=1)
         response = self.client.post(reverse('items:category_delete', args=[category.pk]))
         self.assertRedirects(response, reverse('items:category_list'))
         item.refresh_from_db()
-        self.assertIsNone(item.category)
+        self.assertEqual(item.category, category)
+        self.assertTrue(Category.objects.filter(pk=category.pk).exists())

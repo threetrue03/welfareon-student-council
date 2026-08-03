@@ -61,6 +61,40 @@ class RentalRecord(models.Model):
         return self.get_status_display()
 
 
+class ConsumableIssueRecord(models.Model):
+    student = models.ForeignKey(
+        Student,
+        verbose_name='학생',
+        related_name='consumable_issue_records',
+        on_delete=models.PROTECT,
+    )
+    item = models.ForeignKey(
+        Item,
+        verbose_name='소모품',
+        related_name='issue_records',
+        on_delete=models.PROTECT,
+    )
+    quantity = models.PositiveIntegerField('지급 수량')
+    issued_at = models.DateTimeField('지급일시', default=timezone.now)
+    worker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='처리 근무자',
+        related_name='consumable_issue_records',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    memo = models.CharField('메모', max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['-issued_at']
+        verbose_name = '소모품 지급 기록'
+        verbose_name_plural = '소모품 지급 기록'
+
+    def __str__(self):
+        return f'{self.student.name} / {self.item.name} {self.quantity}개 지급'
+
+
 class ReturnRecord(models.Model):
     class ReturnStatus(models.TextChoices):
         NORMAL = 'normal', '정상 반납'

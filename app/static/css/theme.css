@@ -161,6 +161,47 @@ html.theme-dark .backup-summary-field {
   box-shadow: var(--wo-shadow) !important;
 }
 
+html.theme-dark .statistics-summary-card,
+html.theme-dark .statistics-toolbar,
+html.theme-dark .statistics-card,
+html.theme-dark .statistics-date-form {
+  border-color: var(--wo-border) !important;
+  background: var(--wo-surface) !important;
+  color: var(--wo-text) !important;
+  box-shadow: var(--wo-shadow) !important;
+}
+
+html.theme-dark .statistics-summary-card strong,
+html.theme-dark .statistics-card h2,
+html.theme-dark .statistics-toolbar h1,
+html.theme-dark .statistics-ranking-body strong {
+  color: var(--wo-text) !important;
+}
+
+html.theme-dark .statistics-summary-card span,
+html.theme-dark .statistics-toolbar p,
+html.theme-dark .dual-chart-row > strong,
+html.theme-dark .dual-chart-value,
+html.theme-dark .statistics-ranking-body > div:first-child > span {
+  color: var(--wo-text-sub) !important;
+}
+
+html.theme-dark .statistics-track,
+html.theme-dark .statistics-rank {
+  background: var(--wo-surface-2) !important;
+}
+
+html.theme-dark .statistics-year-form select {
+  border-color: var(--wo-border) !important;
+  color: var(--wo-text) !important;
+  background: var(--wo-input) !important;
+}
+
+html.theme-dark .statistics-date-form.active {
+  border-color: rgba(96, 165, 250, .55) !important;
+  background: rgba(37, 99, 235, .12) !important;
+}
+
 html.theme-dark .sidebar {
   border-right: 1px solid rgba(148, 163, 184, .14);
   background: #0b1220 !important;

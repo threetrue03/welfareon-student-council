@@ -1,10 +1,10 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, Prefetch, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -14,11 +14,22 @@ from items.models import Category, EquipmentUnit, Item
 from students.models import Student
 
 from .forms import ConsumableIssueForm, RentalCreateForm
-from .models import RentalRecord, ReturnRecord
+from .models import ConsumableIssueRecord, RentalRecord, ReturnRecord
 from .settings_store import get_current_policy_snapshot, get_default_rental_days
 
 PAGE_SIZE = 10
 PAGE_WINDOW_SIZE = 8
+STAT_PERIOD_CHOICES = [
+    ('week', '최근 1주'),
+    ('month', '최근 1개월'),
+    ('winter_first', '상반기 겨울방학'),
+    ('semester_1', '1학기'),
+    ('summer', '여름방학'),
+    ('semester_2', '2학기'),
+    ('winter_second', '하반기 겨울방학'),
+    ('year', '최근 1년'),
+    ('all', '전체 누적'),
+]
 
 
 def _pagination_query_string(request):
@@ -261,6 +272,13 @@ def borrow_view(request):
                         item = consumables_by_id[item_id]
                         item.current_quantity -= quantity
                         item.save(update_fields=['current_quantity', 'updated_at'])
+                        ConsumableIssueRecord.objects.create(
+                            student=selected_student,
+                            item=item,
+                            quantity=quantity,
+                            memo=memo,
+                            worker=request.user,
+                        )
                         processed_labels.append(f'{item.name} {quantity}개')
 
                 messages.success(request, f'{selected_student.name} 학생에게 {len(processed_labels)}개 항목이 처리되었습니다. ({", ".join(processed_labels)})')
@@ -411,6 +429,163 @@ def _apply_date_filter(queryset, field_name, date_context):
     return queryset
 
 
+def _statistics_period(request):
+    today = timezone.localdate()
+    valid_periods = {**dict(STAT_PERIOD_CHOICES), 'custom': '직접 선택'}
+    period_key = request.GET.get('period', 'month').strip()
+    if period_key not in valid_periods:
+        period_key = 'month'
+
+    default_year = today.year + 1 if today.month == 12 else today.year
+    try:
+        selected_year = int(request.GET.get('year', default_year))
+    except (TypeError, ValueError):
+        selected_year = default_year
+    selected_year = min(max(selected_year, 2000), 2100)
+
+    start_date = None
+    end_date = None
+    if period_key == 'week':
+        start_date = today - timedelta(days=6)
+        end_date = today
+    elif period_key == 'month':
+        start_date = today - timedelta(days=29)
+        end_date = today
+    elif period_key == 'winter_first':
+        start_date = date(selected_year - 1, 12, 1)
+        end_date = date(selected_year, 3, 1) - timedelta(days=1)
+    elif period_key == 'semester_1':
+        start_date = date(selected_year, 3, 1)
+        end_date = date(selected_year, 6, 30)
+    elif period_key == 'summer':
+        start_date = date(selected_year, 7, 1)
+        end_date = date(selected_year, 8, 31)
+    elif period_key == 'semester_2':
+        start_date = date(selected_year, 9, 1)
+        end_date = date(selected_year, 11, 30)
+    elif period_key == 'winter_second':
+        start_date = date(selected_year, 12, 1)
+        end_date = date(selected_year + 1, 3, 1) - timedelta(days=1)
+    elif period_key == 'year':
+        start_date = today - timedelta(days=364)
+        end_date = today
+    elif period_key == 'custom':
+        try:
+            start_date = date.fromisoformat(request.GET.get('start_date', '').strip())
+            end_date = date.fromisoformat(request.GET.get('end_date', '').strip())
+        except (TypeError, ValueError):
+            start_date = end_date = today
+        if start_date > end_date:
+            start_date, end_date = end_date, start_date
+
+    label = valid_periods[period_key]
+    if start_date and end_date:
+        label = f'{label} · {start_date:%Y-%m-%d} ~ {end_date:%Y-%m-%d}'
+    return {
+        'period_key': period_key,
+        'period_label': label,
+        'period_start': start_date,
+        'period_end': end_date,
+        'custom_start_date': start_date.isoformat() if period_key == 'custom' else '',
+        'custom_end_date': end_date.isoformat() if period_key == 'custom' else '',
+        'selected_year': selected_year,
+        'year_choices': range(max(default_year, selected_year), 2019, -1),
+    }
+
+
+def _apply_statistics_period(queryset, field_name, period_context):
+    start_date = period_context['period_start']
+    end_date = period_context['period_end']
+    if start_date:
+        queryset = queryset.filter(**{f'{field_name}__date__gte': start_date})
+    if end_date:
+        queryset = queryset.filter(**{f'{field_name}__date__lte': end_date})
+    return queryset
+
+
+def _chart_distributions(rentals, returns):
+    weekday_rows = [
+        {'label': label, 'rentals': 0, 'returns': 0}
+        for label in ['월', '화', '수', '목', '금', '토', '일']
+    ]
+    hourly_rows = [
+        {'label': f'{hour:02d}시', 'rentals': 0, 'returns': 0}
+        for hour in range(24)
+    ]
+
+    for value in rentals.values_list('borrowed_at', flat=True):
+        local_value = timezone.localtime(value)
+        weekday_rows[local_value.weekday()]['rentals'] += 1
+        hourly_rows[local_value.hour]['rentals'] += 1
+    for value in returns.values_list('returned_at', flat=True):
+        local_value = timezone.localtime(value)
+        weekday_rows[local_value.weekday()]['returns'] += 1
+        hourly_rows[local_value.hour]['returns'] += 1
+
+    for rows in (weekday_rows, hourly_rows):
+        maximum = max(
+            [row['rentals'] for row in rows] + [row['returns'] for row in rows] + [1]
+        )
+        for row in rows:
+            row['rental_percent'] = round(row['rentals'] / maximum * 100)
+            row['return_percent'] = round(row['returns'] / maximum * 100)
+    return weekday_rows, hourly_rows
+
+
+def _ranked_rows(queryset, *, aggregate, unit):
+    rows = list(
+        queryset.values('item_id', 'item__name')
+        .annotate(value=aggregate)
+        .order_by('-value', 'item__name')
+    )
+    maximum = max([row['value'] for row in rows] + [1])
+    for rank, row in enumerate(rows, start=1):
+        row['rank'] = rank
+        row['label'] = row['item__name']
+        row['unit'] = unit
+        row['percent'] = round(row['value'] / maximum * 100)
+    return rows
+
+
+def _overdue_ranking(period_context):
+    today = timezone.localdate()
+    rentals = RentalRecord.objects.select_related('student')
+    start_date = period_context['period_start']
+    end_date = period_context['period_end']
+    if start_date:
+        rentals = rentals.filter(due_date__gte=start_date)
+    if end_date:
+        rentals = rentals.filter(due_date__lte=end_date)
+
+    ranking = {}
+    for record in rentals:
+        is_currently_overdue = record.returned_at is None and record.due_date < today
+        was_returned_late = bool(
+            record.returned_at
+            and timezone.localtime(record.returned_at).date() > record.due_date
+        )
+        if not (is_currently_overdue or was_returned_late):
+            continue
+        row = ranking.setdefault(record.student_id, {
+            'student': record.student,
+            'value': 0,
+            'active_overdue': 0,
+        })
+        row['value'] += 1
+        if is_currently_overdue:
+            row['active_overdue'] += 1
+
+    rows = sorted(
+        ranking.values(),
+        key=lambda row: (-row['value'], row['student'].student_id),
+    )
+    maximum = max([row['value'] for row in rows] + [1])
+    for rank, row in enumerate(rows, start=1):
+        row['rank'] = rank
+        row['percent'] = round(row['value'] / maximum * 100)
+    return rows
+
+
 @login_required
 def rental_records_view(request):
     date_context = _record_date_context(request)
@@ -434,4 +609,61 @@ def return_records_view(request):
         'record_sub_tab': 'returns',
         'records': records,
         **date_context,
+    })
+
+
+@login_required
+def consumable_records_view(request):
+    date_context = _record_date_context(request)
+    records = ConsumableIssueRecord.objects.select_related('student', 'item', 'worker')
+    records = _apply_date_filter(records, 'issued_at', date_context).order_by('-issued_at')[:300]
+    return render(request, 'rentals/consumable_records.html', {
+        'active_tab': 'records',
+        'record_sub_tab': 'consumables',
+        'records': records,
+        **date_context,
+    })
+
+
+@login_required
+def statistics_view(request):
+    period_context = _statistics_period(request)
+    equipment_rentals = RentalRecord.objects.filter(item__item_type=Item.ItemType.EQUIPMENT)
+    equipment_returns = ReturnRecord.objects.filter(item__item_type=Item.ItemType.EQUIPMENT)
+    consumable_issues = ConsumableIssueRecord.objects.all()
+
+    equipment_rentals = _apply_statistics_period(equipment_rentals, 'borrowed_at', period_context)
+    equipment_returns = _apply_statistics_period(equipment_returns, 'returned_at', period_context)
+    consumable_issues = _apply_statistics_period(consumable_issues, 'issued_at', period_context)
+
+    weekday_rows, hourly_rows = _chart_distributions(equipment_rentals, equipment_returns)
+    equipment_rows = _ranked_rows(
+        equipment_rentals,
+        aggregate=Count('id'),
+        unit='건',
+    )
+    consumable_rows = _ranked_rows(
+        consumable_issues,
+        aggregate=Sum('quantity'),
+        unit='개',
+    )
+    overdue_rows = _overdue_ranking(period_context)
+    consumable_total = consumable_issues.aggregate(total=Sum('quantity'))['total'] or 0
+
+    return render(request, 'rentals/statistics.html', {
+        'active_tab': 'records',
+        'record_sub_tab': 'statistics',
+        'period_choices': STAT_PERIOD_CHOICES,
+        'weekday_rows': weekday_rows,
+        'hourly_rows': hourly_rows,
+        'equipment_rows': equipment_rows,
+        'consumable_rows': consumable_rows,
+        'overdue_rows': overdue_rows,
+        'summary': {
+            'rentals': equipment_rentals.count(),
+            'returns': equipment_returns.count(),
+            'consumable_quantity': consumable_total,
+            'overdue': sum(row['value'] for row in overdue_rows),
+        },
+        **period_context,
     })

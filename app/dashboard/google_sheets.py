@@ -20,6 +20,7 @@ SHEET_TITLES = [
     '오늘 요약',
     '근무 기록',
     '대여 기록',
+    '대여 현황',
     '반납 기록',
     '반납 예정',
     '미반납_연체',
@@ -249,6 +250,17 @@ def build_today_sheet_payload(today=None) -> dict[str, list[list[Any]]]:
             record.memo or '',
         ])
     payload['대여 기록'] = rental_rows
+
+    active_rental_rows = [['이름', '학번', '물품', '물품번호', '반납예정일']]
+    for record in active_rentals:
+        active_rental_rows.append([
+            record.student.name,
+            record.student.student_id,
+            record.item.name,
+            record.unit.number,
+            record.due_date.strftime('%Y-%m-%d'),
+        ])
+    payload['대여 현황'] = active_rental_rows
 
     return_rows = [['반납 일시', '반납 근무자', '학생', '물품', '물품 번호', '반납 상태', '연체']]
     for record in today_returns:

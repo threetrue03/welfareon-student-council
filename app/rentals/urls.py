@@ -10,4 +10,6 @@ urlpatterns = [
     path('api/students/search/', views.student_search_api, name='student_search_api'),
     path('records/rentals/', views.rental_records_view, name='rental_records'),
     path('records/returns/', views.return_records_view, name='return_records'),
+    path('records/consumables/', views.consumable_records_view, name='consumable_records'),
+    path('records/statistics/', views.statistics_view, name='statistics'),
 ]
